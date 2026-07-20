@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>A Terrible Day at the Office – WebAR</title>
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+<style>
+html,body{margin:0;overflow:hidden;font-family:Arial,sans-serif;background: transparent;width: 100%;height: 100%}
+canvas{touch-action:none}
+#panel{position:fixed;top:12px;left:12px;z-index:1000;width:min(340px,calc(100vw - 48px));padding:14px 16px;background:rgba(255,255,255,.94);border-radius:14px;box-shadow:0 7px 24px rgba(0,0,0,.25);pointer-events:none}
+#title{font-size:18px;font-weight:700;margin-bottom:6px}
+#message{line-height:1.35;min-height:38px}
+#progress{margin-top:8px;font-weight:700}
+#success{display:none;margin-top:10px;padding:8px 10px;background:#e5f7e9;border-radius:9px;font-weight:700}
+#reset{position:fixed;right:12px;bottom:12px;z-index:1001;border:0;border-radius:999px;padding:11px 15px;background:rgba(255,255,255,.94);box-shadow:0 4px 16px rgba(0,0,0,.25);font-weight:700}
+</style>
+<script>
+const state={task:0,total:3,targetVisible:false};
+function msg(t){document.querySelector("#message").textContent=t}
+function progress(){document.querySelector("#progress").textContent=`Tasks completed: ${state.task}/${state.total}`}
+function fadeStage(n){
+ const el=document.querySelector(`#stage-${n}`);
+ el.setAttribute("visible",true);
+ el.setAttribute("material","opacity",0);
+ el.setAttribute("animation__fade",{property:"material.opacity",from:0,to:1,dur:650,easing:"easeInOutQuad"});
+}
+function complete(n){
+ if(state.task!==n-1)return;
+ state.task=n; progress(); fadeStage(n);
+ if(n===1){
+   document.querySelector("#paper").setAttribute("visible",false);
+   document.querySelector("#bin-ring").setAttribute("visible",false);
+   document.querySelector("#coffee-zone").setAttribute("visible",true);
+   msg("Great! Now wipe the coffee spill with your finger.");
+ }
+ if(n===2){
+   document.querySelector("#coffee-zone").setAttribute("visible",false);
+   document.querySelector("#paper-stack").setAttribute("visible",true);
+   document.querySelector("#drawer-guide").setAttribute("visible",true);
+   msg("The desk is dry. Drag the paper stack into the drawer.");
+ }
+ if(n===3){
+   document.querySelector("#paper-stack").setAttribute("visible",false);
+   document.querySelector("#drawer-guide").setAttribute("visible",false);
+   document.querySelector("#success").style.display="block";
+   msg("Excellent! You restored order to the office.");
+ }
+}
+AFRAME.registerComponent("live-clock",{
+ init(){
+  this.h=this.el.querySelector(".hour");
+  this.m=this.el.querySelector(".minute");
+  this.s=this.el.querySelector(".second");
+ },
+ tick(){
+  if(!state.targetVisible)return;
+  const d=new Date(),s=d.getSeconds()+d.getMilliseconds()/1000,m=d.getMinutes()+s/60,h=(d.getHours()%12)+m/60;
+  this.s.setAttribute("rotation",`0 0 ${-s*6}`);
+  this.m.setAttribute("rotation",`0 0 ${-m*6}`);
+  this.h.setAttribute("rotation",`0 0 ${-h*30}`);
+ }
+});
+AFRAME.registerComponent("drag-task",{
+ schema:{zone:{type:"selector"},task:{type:"int"},start:{type:"vec3"},threshold:{type:"number",default:.22}},
+ init(){
+  this.scene=this.el.sceneEl;this.target=document.querySelector("#target");this.surface=document.querySelector("#surface");
+  this.pointer=new THREE.Vector2();this.ray=new THREE.Raycaster();this.drag=false;
+  this.down=this.down.bind(this);this.move=this.move.bind(this);this.up=this.up.bind(this);
+  this.scene.addEventListener("renderstart",()=>{
+   this.canvas=this.scene.canvas;
+   ["pointerdown","pointermove","pointerup","pointercancel"].forEach((e,i)=>this.canvas.addEventListener(e,[this.down,this.move,this.up,this.up][i]));
+  });
+ },
+ norm(e){const r=this.canvas.getBoundingClientRect();this.pointer.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1)},
+ hit(e){this.norm(e);this.ray.setFromCamera(this.pointer,this.scene.camera);return this.ray.intersectObject(this.el.object3D,true).length>0},
+ point(e){
+  this.norm(e);this.ray.setFromCamera(this.pointer,this.scene.camera);
+  const mesh=this.surface.getObject3D("mesh");if(!mesh)return null;
+  const hits=this.ray.intersectObject(mesh,true);if(!hits.length)return null;
+  const p=hits[0].point.clone();this.target.object3D.worldToLocal(p);return p;
+ },
+ down(e){
+  if(state.task!==this.data.task-1||!this.el.getAttribute("visible")||!this.hit(e))return;
+  e.preventDefault();this.drag=true;
+  if(this.canvas.setPointerCapture)this.canvas.setPointerCapture(e.pointerId);
+  this.el.setAttribute("animation__pickup",{property:"scale",to:"1.12 1.12 1.12",dur:140});
+  msg(this.data.task===1?"Drag the crumpled paper into the bin.":"Drag the papers into the highlighted drawer.");
+ },
+ move(e){
+  if(!this.drag)return;e.preventDefault();const p=this.point(e);if(!p)return;
+  const x=THREE.MathUtils.clamp(p.x,-.49,.49),y=THREE.MathUtils.clamp(p.y,-.36,.36);
+  this.el.setAttribute("position",`${x} ${y} .13`);
+  this.el.setAttribute("rotation",`${8+y*15} ${x*20} ${-x*28}`);
+ },
+ up(e){
+  if(!this.drag)return;e.preventDefault();this.drag=false;
+  const p=this.el.getAttribute("position"),z=this.data.zone.getAttribute("position"),d=Math.hypot(p.x-z.x,p.y-z.y);
+  if(d<this.data.threshold){
+   this.el.setAttribute("animation__drop",{property:"position",to:`${z.x} ${z.y-.05} .08`,dur:420,easing:"easeInQuad"});
+   this.el.setAttribute("animation__shrink",{property:"scale",to:"0 0 0",dur:380,delay:230,easing:"easeInBack"});
+   setTimeout(()=>complete(this.data.task),560);
+  }else{
+   const s=this.data.start;
+   this.el.setAttribute("animation__return",{property:"position",to:`${s.x} ${s.y} ${s.z}`,dur:480,easing:"easeOutBack"});
+   this.el.setAttribute("animation__rot",{property:"rotation",to:"0 0 0",dur:350});
+   this.el.setAttribute("animation__scale",{property:"scale",to:"1 1 1",dur:220});
+   msg("Not quite. Release it inside the highlighted area.");
+  }
+ }
+});
+AFRAME.registerComponent("wipe-task",{
+ init(){
+  this.scene=this.el.sceneEl;this.active=false;this.distance=0;
+  this.down=this.down.bind(this);this.move=this.move.bind(this);this.up=this.up.bind(this);
+  this.scene.addEventListener("renderstart",()=>{
+   this.canvas=this.scene.canvas;
+   this.canvas.addEventListener("pointerdown",this.down);
+   this.canvas.addEventListener("pointermove",this.move);
+   this.canvas.addEventListener("pointerup",this.up);
+   this.canvas.addEventListener("pointercancel",this.up);
+  });
+ },
+ down(e){
+  if(state.task!==1)return;
+  const r=this.canvas.getBoundingClientRect(),p=new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1),ray=new THREE.Raycaster();
+  ray.setFromCamera(p,this.scene.camera);
+  if(!ray.intersectObject(this.el.object3D,true).length)return;
+  e.preventDefault();this.active=true;this.lastX=e.clientX;this.lastY=e.clientY;msg("Keep wiping across the spill.");
+ },
+ move(e){
+  if(!this.active||state.task!==1)return;e.preventDefault();
+  this.distance+=Math.hypot(e.clientX-this.lastX,e.clientY-this.lastY);this.lastX=e.clientX;this.lastY=e.clientY;
+  this.el.setAttribute("material","opacity",.22+Math.min(1,this.distance/500)*.35);
+  if(this.distance>=500){this.active=false;complete(2)}
+ },
+ up(){this.active=false}
+});
+</script>
+</head>
+<body>
+<div id="panel">
+ <div id="title">A Terrible Day at the Office</div>
+ <div id="message">Starting MindAR…</div>
+ <div id="progress">Tasks completed: 0/3</div>
+ <div id="success">✓ The office is clean and organised!</div>
+</div>
+<button id="reset" onclick="location.reload()">Restart</button>
+<a-scene mindar-image="
+    imageTargetSrc: ./assets/office-target.mind;
+    warmupTolerance: 1;
+    missTolerance: 5;
+  "
+  color-space="sRGB"
+  renderer="
+    colorManagement: true;
+    physicallyCorrectLights: true;
+    antialias: true;
+  "
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false">
+ <a-assets timeout="20000">
+  <img id="s1" src="./assets/stage-1-paper-removed.jpg" crossorigin="anonymous">
+  <img id="s2" src="./assets/stage-2-coffee-clean.jpg" crossorigin="anonymous">
+  <img id="s3" src="./assets/stage-3-papers-drawer.jpg" crossorigin="anonymous">
+ </a-assets>
+ <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+ <a-entity id="target" mindar-image-target="targetIndex:0">
+  <a-plane id="surface" width="1" height=".75" position="0 0 .025"
+   material="transparent:true;opacity:0;depthWrite:false"></a-plane>
+
+  <a-plane id="stage-1" src="#s1" width="1" height=".75" position="0 0 .035" visible="false"
+   material="shader:flat;transparent:true;opacity:0"></a-plane>
+  <a-plane id="stage-2" src="#s2" width="1" height=".75" position="0 0 .040" visible="false"
+   material="shader:flat;transparent:true;opacity:0"></a-plane>
+  <a-plane id="stage-3" src="#s3" width="1" height=".75" position="0 0 .045" visible="false"
+   material="shader:flat;transparent:true;opacity:0"></a-plane>
+
+  <a-entity live-clock position=".266 .299 .09" scale=".115 .115 .115">
+   <a-circle radius=".5" color="#f4f1e8" material="shader:flat;transparent:true;opacity:.93"></a-circle>
+   <a-circle radius=".035" color="#222" position="0 0 .04"></a-circle>
+   <a-entity class="hour" position="0 0 .025"><a-plane width=".055" height=".24" color="#222" position="0 .12 0"></a-plane></a-entity>
+   <a-entity class="minute" position="0 0 .03"><a-plane width=".035" height=".36" color="#292929" position="0 .18 0"></a-plane></a-entity>
+   <a-entity class="second" position="0 0 .035"><a-plane width=".013" height=".40" color="#c63434" position="0 .20 0"></a-plane></a-entity>
+  </a-entity>
+
+  <a-entity id="paper" position=".178 -.251 .13"
+   drag-task="zone:#bin-zone;task:1;start:.178 -.251 .13;threshold:.22"
+   animation__idle="property:position;from:.178 -.251 .13;to:.178 -.236 .13;dur:900;dir:alternate;loop:true;easing:easeInOutSine">
+   <a-dodecahedron radius=".072" color="#f3efe4"></a-dodecahedron>
+  </a-entity>
+  <a-circle id="bin-zone" radius=".105" position=".398 -.219 .085" material="transparent:true;opacity:0"></a-circle>
+  <a-ring id="bin-ring" radius-inner=".105" radius-outer=".127" color="#58d27a" position=".398 -.219 .075"
+   animation="property:scale;from:.92 .92 .92;to:1.12 1.12 1.12;dur:760;dir:alternate;loop:true"></a-ring>
+
+  <a-plane id="coffee-zone" wipe-task width=".30" height=".18" position="-.293 -.247 .115" visible="false"
+   material="color:#64b5f6;transparent:true;opacity:.22;side:double"
+   animation="property:material.opacity;from:.14;to:.34;dur:700;dir:alternate;loop:true"></a-plane>
+
+  <a-entity id="paper-stack" position=".008 -.136 .13" visible="false"
+   drag-task="zone:#drawer-zone;task:3;start:.008 -.136 .13;threshold:.24">
+   <a-box width=".25" height=".12" depth=".035" color="#f6f2df"></a-box>
+   <a-box width=".23" height=".105" depth=".035" color="#fff" position=".01 .012 .022"></a-box>
+   <a-box width=".22" height=".095" depth=".035" color="#e9e2c6" position="-.01 .024 .044"></a-box>
+  </a-entity>
+  <a-plane id="drawer-zone" width=".22" height=".18" position=".377 -.129 .085" material="transparent:true;opacity:0"></a-plane>
+  <a-plane id="drawer-guide" width=".22" height=".18" position=".377 -.129 .075" visible="false"
+   material="color:#58d27a;transparent:true;opacity:.30;side:double"
+   animation="property:material.opacity;from:.16;to:.43;dur:720;dir:alternate;loop:true"></a-plane>
+ </a-entity>
+</a-scene>
+
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+ const scene=document.querySelector("a-scene"),target=document.querySelector("#target");
+ scene.addEventListener("arReady",()=>msg("Camera ready. Show the office poster."));
+ scene.addEventListener("arError",()=>msg("MindAR could not start."));
+ target.addEventListener("targetFound",()=>{
+  state.targetVisible=true;
+  if(state.task===0)msg("Office detected. Drag the crumpled paper into the bin.");
+  else if(state.task===1)msg("Wipe the coffee spill with your finger.");
+  else if(state.task===2)msg("Drag the paper stack into the drawer.");
+  else msg("The office is clean and organised.");
+ });
+ target.addEventListener("targetLost",()=>{state.targetVisible=false;msg("Office lost. Show the complete poster again.")});
+});
+</script>
+</body>
+</html>

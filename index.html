@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>A Terrible Day at the Office – WebAR</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>A Terrible Day at the Office — Version 2</title>
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 <style>
-html,body{margin:0;overflow:hidden;font-family:Arial,sans-serif;background: transparent;width: 100%;height: 100%}
+html,body{margin:0;overflow:hidden;font-family:Arial,sans-serif}
 canvas{touch-action:none}
-#panel{position:fixed;top:12px;left:12px;z-index:1000;width:min(340px,calc(100vw - 48px));padding:14px 16px;background:rgba(255,255,255,.94);border-radius:14px;box-shadow:0 7px 24px rgba(0,0,0,.25);pointer-events:none}
+#panel{position:fixed;top:12px;left:12px;z-index:1000;width:min(350px,calc(100vw - 48px));padding:14px 16px;background:rgba(255,255,255,.94);border-radius:14px;box-shadow:0 7px 24px rgba(0,0,0,.25);pointer-events:none}
 #title{font-size:18px;font-weight:700;margin-bottom:6px}
 #message{line-height:1.35;min-height:38px}
 #progress{margin-top:8px;font-weight:700}
@@ -17,214 +17,291 @@ canvas{touch-action:none}
 #reset{position:fixed;right:12px;bottom:12px;z-index:1001;border:0;border-radius:999px;padding:11px 15px;background:rgba(255,255,255,.94);box-shadow:0 4px 16px rgba(0,0,0,.25);font-weight:700}
 </style>
 <script>
-const state={task:0,total:3,targetVisible:false};
-function msg(t){document.querySelector("#message").textContent=t}
+const state={task:0,total:3,targetVisible:false,printerRunning:false};
+
+function msg(text){document.querySelector("#message").textContent=text}
 function progress(){document.querySelector("#progress").textContent=`Tasks completed: ${state.task}/${state.total}`}
-function fadeStage(n){
- const el=document.querySelector(`#stage-${n}`);
- el.setAttribute("visible",true);
- el.setAttribute("material","opacity",0);
- el.setAttribute("animation__fade",{property:"material.opacity",from:0,to:1,dur:650,easing:"easeInOutQuad"});
-}
-function complete(n){
- if(state.task!==n-1)return;
- state.task=n; progress(); fadeStage(n);
- if(n===1){
-   document.querySelector("#paper").setAttribute("visible",false);
-   document.querySelector("#bin-ring").setAttribute("visible",false);
-   document.querySelector("#coffee-zone").setAttribute("visible",true);
-   msg("Great! Now wipe the coffee spill with your finger.");
- }
- if(n===2){
-   document.querySelector("#coffee-zone").setAttribute("visible",false);
-   document.querySelector("#paper-stack").setAttribute("visible",true);
-   document.querySelector("#drawer-guide").setAttribute("visible",true);
-   msg("The desk is dry. Drag the paper stack into the drawer.");
- }
- if(n===3){
-   document.querySelector("#paper-stack").setAttribute("visible",false);
-   document.querySelector("#drawer-guide").setAttribute("visible",false);
-   document.querySelector("#success").style.display="block";
-   msg("Excellent! You restored order to the office.");
- }
-}
-AFRAME.registerComponent("live-clock",{
- init(){
-  this.h=this.el.querySelector(".hour");
-  this.m=this.el.querySelector(".minute");
-  this.s=this.el.querySelector(".second");
- },
- tick(){
-  if(!state.targetVisible)return;
-  const d=new Date(),s=d.getSeconds()+d.getMilliseconds()/1000,m=d.getMinutes()+s/60,h=(d.getHours()%12)+m/60;
-  this.s.setAttribute("rotation",`0 0 ${-s*6}`);
-  this.m.setAttribute("rotation",`0 0 ${-m*6}`);
-  this.h.setAttribute("rotation",`0 0 ${-h*30}`);
- }
-});
-AFRAME.registerComponent("drag-task",{
- schema:{zone:{type:"selector"},task:{type:"int"},start:{type:"vec3"},threshold:{type:"number",default:.22}},
- init(){
-  this.scene=this.el.sceneEl;this.target=document.querySelector("#target");this.surface=document.querySelector("#surface");
-  this.pointer=new THREE.Vector2();this.ray=new THREE.Raycaster();this.drag=false;
-  this.down=this.down.bind(this);this.move=this.move.bind(this);this.up=this.up.bind(this);
-  this.scene.addEventListener("renderstart",()=>{
-   this.canvas=this.scene.canvas;
-   ["pointerdown","pointermove","pointerup","pointercancel"].forEach((e,i)=>this.canvas.addEventListener(e,[this.down,this.move,this.up,this.up][i]));
-  });
- },
- norm(e){const r=this.canvas.getBoundingClientRect();this.pointer.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1)},
- hit(e){this.norm(e);this.ray.setFromCamera(this.pointer,this.scene.camera);return this.ray.intersectObject(this.el.object3D,true).length>0},
- point(e){
-  this.norm(e);this.ray.setFromCamera(this.pointer,this.scene.camera);
-  const mesh=this.surface.getObject3D("mesh");if(!mesh)return null;
-  const hits=this.ray.intersectObject(mesh,true);if(!hits.length)return null;
-  const p=hits[0].point.clone();this.target.object3D.worldToLocal(p);return p;
- },
- down(e){
-  if(state.task!==this.data.task-1||!this.el.getAttribute("visible")||!this.hit(e))return;
-  e.preventDefault();this.drag=true;
-  if(this.canvas.setPointerCapture)this.canvas.setPointerCapture(e.pointerId);
-  this.el.setAttribute("animation__pickup",{property:"scale",to:"1.12 1.12 1.12",dur:140});
-  msg(this.data.task===1?"Drag the crumpled paper into the bin.":"Drag the papers into the highlighted drawer.");
- },
- move(e){
-  if(!this.drag)return;e.preventDefault();const p=this.point(e);if(!p)return;
-  const x=THREE.MathUtils.clamp(p.x,-.49,.49),y=THREE.MathUtils.clamp(p.y,-.36,.36);
-  this.el.setAttribute("position",`${x} ${y} .13`);
-  this.el.setAttribute("rotation",`${8+y*15} ${x*20} ${-x*28}`);
- },
- up(e){
-  if(!this.drag)return;e.preventDefault();this.drag=false;
-  const p=this.el.getAttribute("position"),z=this.data.zone.getAttribute("position"),d=Math.hypot(p.x-z.x,p.y-z.y);
-  if(d<this.data.threshold){
-   this.el.setAttribute("animation__drop",{property:"position",to:`${z.x} ${z.y-.05} .08`,dur:420,easing:"easeInQuad"});
-   this.el.setAttribute("animation__shrink",{property:"scale",to:"0 0 0",dur:380,delay:230,easing:"easeInBack"});
-   setTimeout(()=>complete(this.data.task),560);
-  }else{
-   const s=this.data.start;
-   this.el.setAttribute("animation__return",{property:"position",to:`${s.x} ${s.y} ${s.z}`,dur:480,easing:"easeOutBack"});
-   this.el.setAttribute("animation__rot",{property:"rotation",to:"0 0 0",dur:350});
-   this.el.setAttribute("animation__scale",{property:"scale",to:"1 1 1",dur:220});
-   msg("Not quite. Release it inside the highlighted area.");
+
+function complete(task){
+  if(state.task!==task-1)return;
+  state.task=task; progress();
+
+  if(task===1){
+    document.querySelector("#paper").setAttribute("visible",false);
+    document.querySelector("#bin-highlight").setAttribute("visible",false);
+    document.querySelector("#cup").setAttribute("visible",true);
+    document.querySelector("#coaster-highlight").setAttribute("visible",true);
+    msg("Good throw! Drag the coffee cup onto the coaster.");
   }
- }
+  if(task===2){
+    document.querySelector("#cup").setAttribute("visible",false);
+    document.querySelector("#coaster-highlight").setAttribute("visible",false);
+    document.querySelector("#jammed-paper").setAttribute("visible",true);
+    document.querySelector("#jam-highlight").setAttribute("visible",true);
+    msg("The printer is jammed. Pull the flashing sheet completely out.");
+  }
+  if(task===3){
+    document.querySelector("#jammed-paper").setAttribute("visible",false);
+    document.querySelector("#jam-highlight").setAttribute("visible",false);
+    document.querySelector("#printer-light").setAttribute("color","#49b96f");
+    document.querySelector("#success").style.display="block";
+    state.printerRunning=false;
+    msg("Excellent! The office is under control again.");
+  }
+}
+
+function toNDC(event,canvas,vector){
+  const r=canvas.getBoundingClientRect();
+  vector.set(((event.clientX-r.left)/r.width)*2-1,-((event.clientY-r.top)/r.height)*2+1);
+}
+
+AFRAME.registerComponent("printer-behaviour",{
+  init(){this.elapsed=0;this.sheetNumber=0},
+  tick(time,delta){
+    if(!state.targetVisible||!state.printerRunning||state.task>=3)return;
+    this.elapsed+=delta;
+    const roller=document.querySelector("#printer-roller");
+    roller.object3D.rotation.z+=delta*.008;
+    if(this.elapsed>2300){this.elapsed=0;this.emitSheet()}
+  },
+  emitSheet(){
+    const output=document.querySelector("#printer-output");
+    const sheet=document.createElement("a-plane");
+    this.sheetNumber++;
+    sheet.setAttribute("width",".18");
+    sheet.setAttribute("height",".12");
+    sheet.setAttribute("color",this.sheetNumber%2?"#fffef5":"#eef4ff");
+    sheet.setAttribute("position","0 0 0");
+    sheet.setAttribute("material","side:double;transparent:true");
+    sheet.setAttribute("animation__print","property:position;from:0 0 0;to:0 -.16 .035;dur:900;easing:easeOutQuad");
+    sheet.setAttribute("animation__fall","property:rotation;from:0 0 0;to:20 0 8;dur:650;delay:760;easing:easeInQuad");
+    sheet.setAttribute("animation__fade","property:material.opacity;from:1;to:0;dur:500;delay:1600");
+    output.appendChild(sheet);
+    setTimeout(()=>sheet.remove(),2200);
+  }
 });
-AFRAME.registerComponent("wipe-task",{
- init(){
-  this.scene=this.el.sceneEl;this.active=false;this.distance=0;
-  this.down=this.down.bind(this);this.move=this.move.bind(this);this.up=this.up.bind(this);
-  this.scene.addEventListener("renderstart",()=>{
-   this.canvas=this.scene.canvas;
-   this.canvas.addEventListener("pointerdown",this.down);
-   this.canvas.addEventListener("pointermove",this.move);
-   this.canvas.addEventListener("pointerup",this.up);
-   this.canvas.addEventListener("pointercancel",this.up);
-  });
- },
- down(e){
-  if(state.task!==1)return;
-  const r=this.canvas.getBoundingClientRect(),p=new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1),ray=new THREE.Raycaster();
-  ray.setFromCamera(p,this.scene.camera);
-  if(!ray.intersectObject(this.el.object3D,true).length)return;
-  e.preventDefault();this.active=true;this.lastX=e.clientX;this.lastY=e.clientY;msg("Keep wiping across the spill.");
- },
- move(e){
-  if(!this.active||state.task!==1)return;e.preventDefault();
-  this.distance+=Math.hypot(e.clientX-this.lastX,e.clientY-this.lastY);this.lastX=e.clientX;this.lastY=e.clientY;
-  this.el.setAttribute("material","opacity",.22+Math.min(1,this.distance/500)*.35);
-  if(this.distance>=500){this.active=false;complete(2)}
- },
- up(){this.active=false}
+
+AFRAME.registerComponent("throwable-paper",{
+  schema:{bin:{type:"selector"}},
+  init(){
+    this.scene=this.el.sceneEl;
+    this.target=document.querySelector("#target");
+    this.surface=document.querySelector("#interaction-surface");
+    this.pointer=new THREE.Vector2();
+    this.ray=new THREE.Raycaster();
+    this.dragging=false;this.flying=false;
+    this.velocity=new THREE.Vector3();
+    this.samples=[];
+    this.start=this.el.object3D.position.clone();
+    this.down=this.down.bind(this);this.move=this.move.bind(this);this.up=this.up.bind(this);
+    this.scene.addEventListener("renderstart",()=>{
+      this.canvas=this.scene.canvas;
+      this.canvas.addEventListener("pointerdown",this.down);
+      this.canvas.addEventListener("pointermove",this.move);
+      this.canvas.addEventListener("pointerup",this.up);
+      this.canvas.addEventListener("pointercancel",this.up);
+    });
+  },
+  hit(event){
+    toNDC(event,this.canvas,this.pointer);
+    this.ray.setFromCamera(this.pointer,this.scene.camera);
+    return this.ray.intersectObject(this.el.object3D,true).length>0;
+  },
+  point(event){
+    toNDC(event,this.canvas,this.pointer);
+    this.ray.setFromCamera(this.pointer,this.scene.camera);
+    const mesh=this.surface.getObject3D("mesh"); if(!mesh)return null;
+    const hits=this.ray.intersectObject(mesh,true); if(!hits.length)return null;
+    const p=hits[0].point.clone(); this.target.object3D.worldToLocal(p); return p;
+  },
+  down(event){
+    if(state.task!==0||!state.targetVisible||!this.hit(event))return;
+    event.preventDefault();this.dragging=true;this.flying=false;this.samples=[];
+    this.el.setAttribute("animation__pickup","property:scale;to:1.18 1.18 1.18;dur:120");
+    msg("Drag quickly toward the bin and release to throw.");
+  },
+  move(event){
+    if(!this.dragging)return;
+    event.preventDefault();
+    const p=this.point(event);if(!p)return;
+    const x=THREE.MathUtils.clamp(p.x,-.48,.48),y=THREE.MathUtils.clamp(p.y,-.34,.34);
+    this.el.object3D.position.set(x,y,.16);
+    this.el.object3D.rotation.set(THREE.MathUtils.degToRad(12+y*25),THREE.MathUtils.degToRad(x*30),THREE.MathUtils.degToRad(-x*50));
+    this.samples.push({point:new THREE.Vector3(x,y,.16),time:performance.now()});
+    if(this.samples.length>5)this.samples.shift();
+  },
+  up(event){
+    if(!this.dragging)return;
+    event.preventDefault();this.dragging=false;this.flying=true;
+    const last=this.samples[this.samples.length-1],first=this.samples[0];
+    if(last&&first&&last.time>first.time){
+      const seconds=(last.time-first.time)/1000;
+      this.velocity.copy(last.point).sub(first.point).divideScalar(seconds);
+      if(this.velocity.length()>1.8)this.velocity.setLength(1.8);
+    }else this.velocity.set(.35,.25,0);
+    this.velocity.y+=.20;this.velocity.z=.12;
+    this.el.removeAttribute("animation__pickup");
+    this.el.setAttribute("animation__scale","property:scale;to:1 1 1;dur:120");
+  },
+  tick(time,delta){
+    if(!this.flying||!state.targetVisible)return;
+    const dt=Math.min(delta/1000,.035);
+    this.velocity.y-=1.15*dt;this.velocity.x*=.992;this.velocity.z*=.985;
+    this.el.object3D.position.addScaledVector(this.velocity,dt);
+    this.el.object3D.rotation.x+=dt*5;this.el.object3D.rotation.z+=dt*7;
+    const p=this.el.object3D.position,b=this.data.bin.object3D.position;
+    const d=Math.hypot(p.x-b.x,p.y-b.y);
+    if(d<.12&&p.y<b.y+.10){
+      this.flying=false;
+      this.el.setAttribute("animation__drop",`property:position;to:${b.x} ${b.y-.05} .04;dur:300;easing:easeInQuad`);
+      this.el.setAttribute("animation__shrink","property:scale;to:0 0 0;dur:260;delay:150");
+      setTimeout(()=>complete(1),450);
+      return;
+    }
+    if(p.y<-.55||Math.abs(p.x)>.72){
+      this.flying=false;
+      this.el.object3D.position.copy(this.start);
+      this.el.object3D.rotation.set(0,0,0);
+      this.el.object3D.scale.set(1,1,1);
+      msg("The paper missed the bin. Try another throw.");
+    }
+  }
+});
+
+AFRAME.registerComponent("drag-to-zone",{
+  schema:{zone:{type:"selector"},requiredTask:{type:"int"},threshold:{type:"number",default:.13},successTask:{type:"int"}},
+  init(){
+    this.scene=this.el.sceneEl;
+    this.target=document.querySelector("#target");
+    this.surface=document.querySelector("#interaction-surface");
+    this.pointer=new THREE.Vector2();this.ray=new THREE.Raycaster();
+    this.dragging=false;this.start=this.el.object3D.position.clone();
+    this.down=this.down.bind(this);this.move=this.move.bind(this);this.up=this.up.bind(this);
+    this.scene.addEventListener("renderstart",()=>{
+      this.canvas=this.scene.canvas;
+      this.canvas.addEventListener("pointerdown",this.down);
+      this.canvas.addEventListener("pointermove",this.move);
+      this.canvas.addEventListener("pointerup",this.up);
+      this.canvas.addEventListener("pointercancel",this.up);
+    });
+  },
+  hit(event){
+    toNDC(event,this.canvas,this.pointer);this.ray.setFromCamera(this.pointer,this.scene.camera);
+    return this.ray.intersectObject(this.el.object3D,true).length>0;
+  },
+  point(event){
+    toNDC(event,this.canvas,this.pointer);this.ray.setFromCamera(this.pointer,this.scene.camera);
+    const mesh=this.surface.getObject3D("mesh");if(!mesh)return null;
+    const hits=this.ray.intersectObject(mesh,true);if(!hits.length)return null;
+    const p=hits[0].point.clone();this.target.object3D.worldToLocal(p);return p;
+  },
+  down(event){
+    if(state.task!==this.data.requiredTask||!state.targetVisible||!this.el.getAttribute("visible")||!this.hit(event))return;
+    event.preventDefault();this.dragging=true;
+    this.el.setAttribute("animation__pickup","property:scale;to:1.10 1.10 1.10;dur:120");
+  },
+  move(event){
+    if(!this.dragging)return;
+    event.preventDefault();const p=this.point(event);if(!p)return;
+    this.el.object3D.position.set(THREE.MathUtils.clamp(p.x,-.47,.47),THREE.MathUtils.clamp(p.y,-.33,.33),.16);
+  },
+  up(event){
+    if(!this.dragging)return;
+    event.preventDefault();this.dragging=false;
+    const p=this.el.object3D.position,z=this.data.zone.object3D.position;
+    const d=Math.hypot(p.x-z.x,p.y-z.y);
+    if(d<this.data.threshold){
+      this.el.setAttribute("animation__place",`property:position;to:${z.x} ${z.y} .12;dur:320;easing:easeOutBack`);
+      setTimeout(()=>complete(this.data.successTask),350);
+    }else{
+      this.el.setAttribute("animation__return",`property:position;to:${this.start.x} ${this.start.y} ${this.start.z};dur:400;easing:easeOutBack`);
+      this.el.setAttribute("animation__normal","property:scale;to:1 1 1;dur:160");
+      msg(this.data.requiredTask===1?"Place the cup inside the glowing coaster.":"Pull the jammed sheet farther away from the printer.");
+    }
+  }
 });
 </script>
 </head>
 <body>
 <div id="panel">
- <div id="title">A Terrible Day at the Office</div>
- <div id="message">Starting MindAR…</div>
- <div id="progress">Tasks completed: 0/3</div>
- <div id="success">✓ The office is clean and organised!</div>
+  <div id="title">A Terrible Day at the Office — Version 2</div>
+  <div id="message">Starting MindAR…</div>
+  <div id="progress">Tasks completed: 0/3</div>
+  <div id="success">✓ All three problems are resolved!</div>
 </div>
 <button id="reset" onclick="location.reload()">Restart</button>
-<a-scene mindar-image="
-    imageTargetSrc: ./assets/office-target.mind;
-    warmupTolerance: 1;
-    missTolerance: 5;
-  "
-  color-space="sRGB"
-  renderer="
-    colorManagement: true;
-    physicallyCorrectLights: true;
-    antialias: true;
-  "
-  vr-mode-ui="enabled: false"
-  device-orientation-permission-ui="enabled: false">
- <a-assets timeout="20000">
-  <img id="s1" src="./assets/stage-1-paper-removed.jpg" crossorigin="anonymous">
-  <img id="s2" src="./assets/stage-2-coffee-clean.jpg" crossorigin="anonymous">
-  <img id="s3" src="./assets/stage-3-papers-drawer.jpg" crossorigin="anonymous">
- </a-assets>
- <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
- <a-entity id="target" mindar-image-target="targetIndex:0">
-  <a-plane id="surface" width="1" height=".75" position="0 0 .025"
+<a-scene mindar-image="imageTargetSrc: ./assets/office-target.mind; warmupTolerance: 1; missTolerance: 5;"
+ vr-mode-ui="enabled:false" device-orientation-permission-ui="enabled:false">
+<a-assets timeout="20000"></a-assets>
+<a-camera position="0 0 0" look-controls="enabled:false"></a-camera>
+
+<a-entity id="target" mindar-image-target="targetIndex:0">
+  <a-plane id="interaction-surface" width="1" height=".75" position="0 0 .02"
    material="transparent:true;opacity:0;depthWrite:false"></a-plane>
 
-  <a-plane id="stage-1" src="#s1" width="1" height=".75" position="0 0 .035" visible="false"
-   material="shader:flat;transparent:true;opacity:0"></a-plane>
-  <a-plane id="stage-2" src="#s2" width="1" height=".75" position="0 0 .040" visible="false"
-   material="shader:flat;transparent:true;opacity:0"></a-plane>
-  <a-plane id="stage-3" src="#s3" width="1" height=".75" position="0 0 .045" visible="false"
-   material="shader:flat;transparent:true;opacity:0"></a-plane>
+  <a-box width="1" height=".72" depth=".035" position="0 0 .035" color="#a9825d"></a-box>
 
-  <a-entity live-clock position=".266 .299 .09" scale=".115 .115 .115">
-   <a-circle radius=".5" color="#f4f1e8" material="shader:flat;transparent:true;opacity:.93"></a-circle>
-   <a-circle radius=".035" color="#222" position="0 0 .04"></a-circle>
-   <a-entity class="hour" position="0 0 .025"><a-plane width=".055" height=".24" color="#222" position="0 .12 0"></a-plane></a-entity>
-   <a-entity class="minute" position="0 0 .03"><a-plane width=".035" height=".36" color="#292929" position="0 .18 0"></a-plane></a-entity>
-   <a-entity class="second" position="0 0 .035"><a-plane width=".013" height=".40" color="#c63434" position="0 .20 0"></a-plane></a-entity>
+  <a-entity id="bin" position=".37 -.23 .13">
+    <a-cylinder radius=".095" height=".16" color="#56616c" rotation="90 0 0"></a-cylinder>
+    <a-torus radius=".095" radius-tubular=".013" color="#252b31" position="0 0 .085"></a-torus>
+  </a-entity>
+  <a-ring id="bin-highlight" radius-inner=".105" radius-outer=".128" position=".37 -.23 .235" color="#50d276"
+   animation="property:scale;from:.9 .9 .9;to:1.15 1.15 1.15;dur:700;dir:alternate;loop:true"></a-ring>
+
+  <a-entity id="paper" position="-.12 -.18 .16" throwable-paper="bin:#bin"
+   animation__idle="property:position;from:-.12 -.18 .16;to:-.12 -.16 .16;dur:850;dir:alternate;loop:true;easing:easeInOutSine">
+    <a-dodecahedron radius=".065" color="#f4f0e2"></a-dodecahedron>
+    <a-dodecahedron radius=".038" color="#d8d3c5" position=".025 .012 .025"></a-dodecahedron>
   </a-entity>
 
-  <a-entity id="paper" position=".178 -.251 .13"
-   drag-task="zone:#bin-zone;task:1;start:.178 -.251 .13;threshold:.22"
-   animation__idle="property:position;from:.178 -.251 .13;to:.178 -.236 .13;dur:900;dir:alternate;loop:true;easing:easeInOutSine">
-   <a-dodecahedron radius=".072" color="#f3efe4"></a-dodecahedron>
-  </a-entity>
-  <a-circle id="bin-zone" radius=".105" position=".398 -.219 .085" material="transparent:true;opacity:0"></a-circle>
-  <a-ring id="bin-ring" radius-inner=".105" radius-outer=".127" color="#58d27a" position=".398 -.219 .075"
-   animation="property:scale;from:.92 .92 .92;to:1.12 1.12 1.12;dur:760;dir:alternate;loop:true"></a-ring>
+  <a-cylinder id="coaster" radius=".09" height=".012" position="-.32 -.20 .09" rotation="90 0 0" color="#364b5f"></a-cylinder>
+  <a-ring id="coaster-highlight" radius-inner=".09" radius-outer=".115" position="-.32 -.20 .105" visible="false" color="#55c8ff"
+   animation="property:scale;from:.92 .92 .92;to:1.14 1.14 1.14;dur:700;dir:alternate;loop:true"></a-ring>
 
-  <a-plane id="coffee-zone" wipe-task width=".30" height=".18" position="-.293 -.247 .115" visible="false"
-   material="color:#64b5f6;transparent:true;opacity:.22;side:double"
-   animation="property:material.opacity;from:.14;to:.34;dur:700;dir:alternate;loop:true"></a-plane>
-
-  <a-entity id="paper-stack" position=".008 -.136 .13" visible="false"
-   drag-task="zone:#drawer-zone;task:3;start:.008 -.136 .13;threshold:.24">
-   <a-box width=".25" height=".12" depth=".035" color="#f6f2df"></a-box>
-   <a-box width=".23" height=".105" depth=".035" color="#fff" position=".01 .012 .022"></a-box>
-   <a-box width=".22" height=".095" depth=".035" color="#e9e2c6" position="-.01 .024 .044"></a-box>
+  <a-entity id="cup" position=".02 -.07 .16" visible="false"
+   drag-to-zone="zone:#coaster;requiredTask:1;threshold:.14;successTask:2">
+    <a-cylinder radius=".065" height=".13" color="#d55b48" rotation="90 0 0"></a-cylinder>
+    <a-torus radius=".045" radius-tubular=".012" color="#d55b48" position=".075 0 0" rotation="0 90 0"></a-torus>
+    <a-circle radius=".053" color="#4a2c20" position="0 0 .068"></a-circle>
   </a-entity>
-  <a-plane id="drawer-zone" width=".22" height=".18" position=".377 -.129 .085" material="transparent:true;opacity:0"></a-plane>
-  <a-plane id="drawer-guide" width=".22" height=".18" position=".377 -.129 .075" visible="false"
-   material="color:#58d27a;transparent:true;opacity:.30;side:double"
-   animation="property:material.opacity;from:.16;to:.43;dur:720;dir:alternate;loop:true"></a-plane>
- </a-entity>
+
+  <a-entity id="printer" printer-behaviour position=".20 .15 .14">
+    <a-box width=".32" height=".22" depth=".18" color="#d7dde2"></a-box>
+    <a-box width=".25" height=".08" depth=".19" position="0 .10 .01" color="#aeb8c1"></a-box>
+    <a-box width=".21" height=".055" depth=".018" position="0 -.035 .10" color="#262c32"></a-box>
+    <a-cylinder id="printer-roller" radius=".025" height=".20" rotation="0 0 90" position="0 -.03 .11" color="#20252a"></a-cylinder>
+    <a-sphere id="printer-light" radius=".018" position=".12 .065 .10" color="#ef4c4c"
+     animation="property:material.opacity;from:.25;to:1;dur:400;dir:alternate;loop:true"></a-sphere>
+    <a-entity id="printer-output" position="0 -.035 .105"></a-entity>
+  </a-entity>
+
+  <a-plane id="jammed-paper" width=".20" height=".13" position=".20 .055 .255" rotation="0 0 -5" color="#fffef5"
+   visible="false" material="side:double"
+   drag-to-zone="zone:#paper-clear-zone;requiredTask:2;threshold:.17;successTask:3"></a-plane>
+  <a-ring id="jam-highlight" radius-inner=".11" radius-outer=".135" position=".20 .055 .27" visible="false" color="#ffb84d"
+   animation="property:scale;from:.88 .88 .88;to:1.16 1.16 1.16;dur:620;dir:alternate;loop:true"></a-ring>
+  <a-circle id="paper-clear-zone" radius=".08" position="-.08 .15 .11" material="transparent:true;opacity:0"></a-circle>
+
+  <a-box width=".12" height=".05" depth=".08" position="-.34 .19 .10" color="#4d718d"></a-box>
+  <a-box width=".10" height=".04" depth=".07" position="-.34 .19 .145" color="#f1d26a"></a-box>
+  <a-cylinder radius=".025" height=".16" position="-.43 .15 .17" color="#3c8c5b"></a-cylinder>
+</a-entity>
 </a-scene>
 
 <script>
 document.addEventListener("DOMContentLoaded",()=>{
- const scene=document.querySelector("a-scene"),target=document.querySelector("#target");
- scene.addEventListener("arReady",()=>msg("Camera ready. Show the office poster."));
- scene.addEventListener("arError",()=>msg("MindAR could not start."));
- target.addEventListener("targetFound",()=>{
-  state.targetVisible=true;
-  if(state.task===0)msg("Office detected. Drag the crumpled paper into the bin.");
-  else if(state.task===1)msg("Wipe the coffee spill with your finger.");
-  else if(state.task===2)msg("Drag the paper stack into the drawer.");
-  else msg("The office is clean and organised.");
- });
- target.addEventListener("targetLost",()=>{state.targetVisible=false;msg("Office lost. Show the complete poster again.")});
+  const scene=document.querySelector("a-scene"),target=document.querySelector("#target");
+  scene.addEventListener("arReady",()=>msg("Camera ready. Show the office target image."));
+  scene.addEventListener("arError",()=>msg("MindAR could not start. Check camera permission and HTTPS."));
+  target.addEventListener("targetFound",()=>{
+    state.targetVisible=true;state.printerRunning=true;
+    if(state.task===0)msg("Throw the crumpled paper into the waste bin.");
+    else if(state.task===1)msg("Drag the coffee cup onto the glowing coaster.");
+    else if(state.task===2)msg("Pull the jammed paper completely out of the printer.");
+    else msg("The office is under control.");
+  });
+  target.addEventListener("targetLost",()=>{state.targetVisible=false;msg("Target lost. Show the complete office image again.")});
 });
 </script>
 </body>
