@@ -1,0 +1,4 @@
+Copy the compiled MindAR target file from your existing working project here
+and name it:
+
+office-target.mind
