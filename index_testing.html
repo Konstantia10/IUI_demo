@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, user-scalable=no"
+  >
+
+  <title>MindAR Camera Test</title>
+
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #status {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 10000;
+      padding: 10px;
+      background: white;
+      color: black;
+      font-family: Arial, sans-serif;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="status">Starting MindAR…</div>
+
+  <a-scene
+    mindar-image="imageTargetSrc: ./assets/office-target.mind;"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+  >
+
+    <a-camera
+      position="0 0 0"
+      look-controls="enabled: false">
+    </a-camera>
+
+    <a-entity
+      id="target"
+      mindar-image-target="targetIndex: 0">
+
+      <a-plane
+        src="#s1"
+        width="1"
+        height="0.75"
+        position="0 0 0"
+        material="shader: flat">
+      </a-plane>
+
+    </a-entity>
+
+  </a-scene>
+
+  <script>
+    const scene = document.querySelector("a-scene");
+    const target = document.querySelector("#target");
+    const status = document.querySelector("#status");
+
+    scene.addEventListener("arReady", () => {
+      status.textContent = "Camera ready — show the office poster.";
+      console.log("MindAR: arReady");
+    });
+
+    scene.addEventListener("arError", (event) => {
+      status.textContent = "MindAR failed to start.";
+      console.error("MindAR: arError", event);
+    });
+
+    target.addEventListener("targetFound", () => {
+      status.textContent = "Target detected!";
+      console.log("MindAR: targetFound");
+    });
+
+    target.addEventListener("targetLost", () => {
+      status.textContent = "Target lost.";
+      console.log("MindAR: targetLost");
+    });
+  </script>
+
+</body>
+</html>
