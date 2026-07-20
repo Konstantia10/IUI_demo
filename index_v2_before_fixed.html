@@ -117,11 +117,6 @@ AFRAME.registerComponent("throwable-paper",{
   down(event){
     if(state.task!==0||!state.targetVisible||!this.hit(event))return;
     event.preventDefault();this.dragging=true;this.flying=false;this.samples=[];
-
-    // Stop the idle position animation; otherwise it keeps overwriting
-    // the position set by the drag interaction on every frame.
-    this.el.removeAttribute("animation__idle");
-
     this.el.setAttribute("animation__pickup","property:scale;to:1.18 1.18 1.18;dur:120");
     msg("Drag quickly toward the bin and release to throw.");
   },
@@ -168,13 +163,6 @@ AFRAME.registerComponent("throwable-paper",{
       this.el.object3D.position.copy(this.start);
       this.el.object3D.rotation.set(0,0,0);
       this.el.object3D.scale.set(1,1,1);
-
-      // Restore the subtle hint animation only after the failed throw resets.
-      this.el.setAttribute(
-        "animation__idle",
-        "property:position;from:-.12 -.18 .16;to:-.12 -.16 .16;dur:850;dir:alternate;loop:true;easing:easeInOutSine"
-      );
-
       msg("The paper missed the bin. Try another throw.");
     }
   }
