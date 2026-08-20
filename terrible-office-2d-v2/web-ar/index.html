@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <title>Terrible Office AR Cleanup</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="camera-fix.css">
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <script src="ar-app.js"></script>
+</head>
+<body>
+  <section id="welcome" class="welcome">
+    <div class="welcome-card">
+      <p class="eyebrow">Image-tracked WebAR</p>
+      <h1>Clean the terrible office—in its real place</h1>
+      <p id="startStatus">Point your camera at the office poster. Spatial markers will lock onto the objects in the image and guide you through the cleanup.</p>
+      <ol>
+        <li>Allow camera access.</li>
+        <li>Fit the whole poster inside the view.</li>
+        <li>Tap the glowing object, then its destination.</li>
+      </ol>
+      <button id="startAr" class="primary">Start AR cleanup</button>
+      <button id="showTarget" class="secondary">Show target image</button>
+      <div id="launchWarning" class="launch-warning" hidden>
+        <strong>AR cannot run from a file:// address.</strong>
+        <span>Open this project with VS Code Live Server, or serve the project folder and visit:</span>
+        <code>http://localhost:4173/web-ar/</code>
+      </div>
+      <p class="privacy">Camera processing stays in your browser. HTTPS is required on a phone.</p>
+    </div>
+  </section>
+
+  <div id="targetPreview" class="target-preview" hidden>
+    <button id="closeTarget" aria-label="Close target image">×</button>
+    <img src="assets/office-poster.jpg" alt="Office poster used as the MindAR recognition target">
+    <p>Display or print this image, then scan it from the AR page.</p>
+  </div>
+
+  <header class="hud" aria-live="polite">
+    <div class="brand"><span class="live-dot"></span><strong>Office AR</strong></div>
+    <div id="trackingBadge" class="tracking searching">Looking for poster…</div>
+  </header>
+
+  <aside class="mission-panel">
+    <p class="eyebrow">Spatial mission <span id="progressCount">0 / 5</span></p>
+    <h2 id="instruction">Scan the office poster to begin</h2>
+    <div class="progress"><span id="progressBar"></span></div>
+    <button id="undoAr" disabled>Undo</button>
+    <button id="resetAr">Reset</button>
+  </aside>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <div id="scanningOverlay" class="mindar-ui-overlay scanning-guide hidden">
+    <div class="scan-frame">
+      <img src="assets/office-poster.jpg" alt="Office poster alignment guide">
+      <span></span><span></span><span></span><span></span>
+    </div>
+    <strong>Point the camera at the office poster</strong>
+    <p>The poster must be printed or displayed on a different screen. Fit the complete image inside this guide.</p>
+    <button id="openTargetDuringScan" type="button">View target image</button>
+  </div>
+
+  <a-scene id="arScene"
+    mindar-image="imageTargetSrc: assets/office-target.mind; autoStart: false; uiScanning: #scanningOverlay; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 5"
+    embedded color-space="sRGB"
+    renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+    loading-screen="enabled: false">
+
+    <a-assets>
+      <a-mixin id="hotspot" geometry="primitive: circle; radius: .045" material="color: #65d6ff; transparent: true; opacity: .82; shader: flat" animation__pulse="property: scale; from: 1 1 1; to: 1.24 1.24 1.24; dur: 700; dir: alternate; loop: true; easing: easeInOutSine"></a-mixin>
+      <a-mixin id="destination" geometry="primitive: ring; radiusInner: .06; radiusOuter: .078" material="color: #8bffb0; transparent: true; opacity: .45; shader: flat"></a-mixin>
+    </a-assets>
+
+    <a-camera position="0 0 0" look-controls="enabled: false" cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .clickable, .drag-surface"></a-camera>
+
+    <a-entity id="officeTarget" mindar-image-target="targetIndex: 0">
+      <a-plane id="dragSurface" class="drag-surface" width="1" height=".75" position="0 0 .014" material="transparent: true; opacity: 0; depthWrite: false"></a-plane>
+      <a-entity id="frame" position="0 0 .012">
+        <a-plane position="0 .393 0" width="1.04" height=".008" material="color: #65d6ff; shader: flat"></a-plane>
+        <a-plane position="0 -.393 0" width="1.04" height=".008" material="color: #65d6ff; shader: flat"></a-plane>
+        <a-plane position="-.516 0 0" width=".008" height=".79" material="color: #65d6ff; shader: flat"></a-plane>
+        <a-plane position=".516 0 0" width=".008" height=".79" material="color: #65d6ff; shader: flat"></a-plane>
+      </a-entity>
+
+      <a-entity id="paperOne" class="clickable ar-source" mixin="hotspot" position=".20 -.29 .025" data-step="0">
+        <a-text value="PAPER 1" align="center" width=".42" position="0 .075 .002" color="#ffffff"></a-text>
+      </a-entity>
+      <a-entity id="paperTwo" class="clickable ar-source" mixin="hotspot" position=".15 -.20 .025" data-step="1" visible="false">
+        <a-text value="PAPER 2" align="center" width=".42" position="0 .075 .002" color="#ffffff"></a-text>
+      </a-entity>
+      <a-entity id="binTarget" class="clickable ar-target" mixin="destination" position=".40 -.27 .025" data-destination="bin">
+        <a-text value="BIN" align="center" width=".38" position="0 -.08 .002" color="#8bffb0"></a-text>
+      </a-entity>
+
+      <a-entity id="tissue" class="clickable ar-source" mixin="hotspot" position="-.13 -.12 .025" data-step="2" visible="false">
+        <a-plane width=".085" height=".055" material="color: #ffffff; opacity: .92; shader: flat"></a-plane>
+        <a-text value="TISSUE" align="center" width=".38" position="0 .07 .002" color="#ffffff"></a-text>
+      </a-entity>
+      <a-entity id="spillTarget" class="clickable ar-target" mixin="destination" position="-.30 -.27 .025" data-destination="spill" visible="false">
+        <a-text value="SPILL" align="center" width=".38" position="0 -.08 .002" color="#8bffb0"></a-text>
+      </a-entity>
+
+      <a-entity id="mug" class="clickable ar-source" mixin="hotspot" position="-.43 -.22 .025" data-step="3" visible="false">
+        <a-text value="MUG" align="center" width=".38" position="0 .075 .002" color="#ffffff"></a-text>
+      </a-entity>
+
+      <a-entity id="documents" class="clickable ar-source" mixin="hotspot" position=".06 -.13 .025" data-step="4" visible="false" scale="1.25 1.25 1.25">
+        <a-text value="DOCUMENTS" align="center" width=".5" position="0 .075 .002" color="#ffffff"></a-text>
+      </a-entity>
+      <a-entity id="shelfTarget" class="clickable ar-target" mixin="destination" position=".39 .05 .025" data-destination="shelf" visible="false">
+        <a-text value="SHELF" align="center" width=".38" position="0 -.08 .002" color="#8bffb0"></a-text>
+      </a-entity>
+
+      <a-entity id="successBurst" visible="false" position="0 0 .04">
+        <a-ring radius-inner=".08" radius-outer=".09" color="#8bffb0" animation="property: scale; from: .2 .2 .2; to: 5 5 5; dur: 700; easing: easeOutCubic"></a-ring>
+      </a-entity>
+    </a-entity>
+  </a-scene>
+
+  <noscript>This AR experience requires JavaScript.</noscript>
+</body>
+</html>

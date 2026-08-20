@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A Terrible Day at the Office</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>A Terrible Day at the Office</h1>
+      <p>Intelligent Workplace Assistant</p>
+    </div>
+    <div class="intent-control">
+      <label for="intent-mode">Design intent</label>
+      <select id="intent-mode">
+        <option value="supportive">Supportive</option>
+        <option value="persuasive">Persuasive</option>
+        <option value="manipulative">Manipulative</option>
+      </select>
+    </div>
+  </header>
+
+  <main class="app">
+    <section class="office-section">
+      <div class="office-container">
+        <img src="assets/office-poster.jpg" alt="Busy office" class="office-image" />
+        <button class="hotspot clock-hotspot" id="clock-hotspot" aria-label="Check current time"><span>Clock</span></button>
+        <button class="hotspot coffee-hotspot" id="coffee-hotspot" aria-label="Check coffee"><span>Coffee</span></button>
+        <button class="hotspot documents-hotspot" id="documents-hotspot" aria-label="Check documents"><span>Documents</span></button>
+        <button class="hotspot todo-hotspot" id="todo-hotspot" aria-label="Open todo list"><span>Tasks</span></button>
+      </div>
+    </section>
+
+    <section class="dashboard">
+      <article class="status-card">
+        <h2>Current time</h2>
+        <div id="current-time" class="large-value">--:--</div>
+      </article>
+      <article class="status-card">
+        <h2>Meeting</h2>
+        <p>Team meeting at 15:00</p>
+        <p id="meeting-status">Preparing...</p>
+      </article>
+      <article class="status-card">
+        <h2>Coffee</h2>
+        <p id="coffee-status">You have not checked your coffee yet.</p>
+      </article>
+      <article class="status-card">
+        <h2>Documents</h2>
+        <p id="documents-status">3 documents require attention.</p>
+      </article>
+    </section>
+
+    <section class="todo-panel" id="todo-panel">
+      <h2>Today's tasks</h2>
+      <label class="task"><input type="checkbox" data-task="meeting" /> Prepare for meeting</label>
+      <label class="task"><input type="checkbox" data-task="report" /> Finish report</label>
+      <label class="task"><input type="checkbox" data-task="emails" /> Check emails</label>
+      <label class="task"><input type="checkbox" data-task="client" /> Call client</label>
+      <label class="task"><input type="checkbox" data-task="presentation" /> Review presentation</label>
+    </section>
+
+    <section class="assistant">
+      <div class="assistant-header">
+        <div class="assistant-avatar">AI</div>
+        <div>
+          <h2>Office Assistant</h2>
+          <span class="online">● Online</span>
+        </div>
+      </div>
+
+      <div id="messages" class="messages">
+        <div class="message assistant-message">Good morning. You have a busy day ahead. How can I help?</div>
+      </div>
+
+      <div class="quick-actions">
+        <button data-command="time">What's next?</button>
+        <button data-command="meeting">Prepare meeting</button>
+        <button data-command="documents">Find documents</button>
+        <button data-command="coffee">Check coffee</button>
+        <button data-command="focus">Focus mode</button>
+      </div>
+
+      <div class="chat-input">
+        <input type="text" id="user-input" placeholder="Ask your assistant..." />
+        <button id="send-button">Send</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
