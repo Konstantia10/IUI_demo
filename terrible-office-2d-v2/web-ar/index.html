@@ -16,12 +16,12 @@
     <div class="welcome-card">
       <p class="eyebrow">Image-tracked WebAR</p>
       <h1>Clean the terrible office—in its real place</h1>
-      <p id="startStatus">Point your camera at the office poster. A miniature office will extend beyond its top edge without covering the photograph.</p>
+      <p id="startStatus">Point your camera at the office poster. A miniature office built from real 3D models will appear beyond its top edge.</p>
       <ol>
         <li>Allow camera access.</li>
         <li>Fit the whole poster inside the view.</li>
         <li>Look just above the poster for the miniature office.</li>
-        <li>Move sideways to reveal its depth, then tap the glowing objects.</li>
+        <li>Move sideways to reveal its depth, then assemble the glowing models.</li>
       </ol>
       <button id="startAr" class="primary">Start AR cleanup</button>
       <button id="showTarget" class="secondary">Show target image</button>
@@ -77,6 +77,14 @@
     <a-assets>
       <a-mixin id="sourceHalo" geometry="primitive: ring; radiusInner: .052; radiusOuter: .061" material="color: #65d6ff; transparent: true; opacity: .9; shader: flat" animation__pulse="property: scale; from: .88 .88 .88; to: 1.15 1.15 1.15; dur: 800; dir: alternate; loop: true; easing: easeInOutSine"></a-mixin>
       <a-mixin id="targetHalo" geometry="primitive: ring; radiusInner: .064; radiusOuter: .072" material="color: #8bffb0; transparent: true; opacity: .88; shader: flat" animation__pulse="property: scale; from: .92 .92 .92; to: 1.1 1.1 1.1; dur: 950; dir: alternate; loop: true; easing: easeInOutSine"></a-mixin>
+      <a-asset-item id="deskModel" src="assets/models/desk.glb"></a-asset-item>
+      <a-asset-item id="chairModel" src="assets/models/chairDesk.glb"></a-asset-item>
+      <a-asset-item id="screenModel" src="assets/models/computerScreen.glb"></a-asset-item>
+      <a-asset-item id="lampModel" src="assets/models/lampRoundTable.glb"></a-asset-item>
+      <a-asset-item id="booksModel" src="assets/models/books.glb"></a-asset-item>
+      <a-asset-item id="bookcaseModel" src="assets/models/bookcaseOpenLow.glb"></a-asset-item>
+      <a-asset-item id="boxModel" src="assets/models/cardboardBoxOpen.glb"></a-asset-item>
+      <a-asset-item id="plantModel" src="assets/models/pottedPlant.glb"></a-asset-item>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false" cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .clickable"></a-camera>
@@ -85,80 +93,57 @@
       <a-light type="ambient" color="#f3eadb" intensity="1.25"></a-light>
       <a-light type="directional" color="#fff4dd" intensity="1.35" position="-.6 1 .8"></a-light>
 
-      <!-- A miniature desk grows beyond the poster's top edge instead of covering its image. -->
+      <!-- CC0 Kenney models form a coherent miniature office above the target. -->
       <a-entity id="officePortal">
-        <a-plane width=".52" height=".16" position="0 .401 .075" rotation="-90 0 0" material="color: #b39776; transparent: true; opacity: .82; roughness: 1" shadow="receive: true"></a-plane>
-        <a-box width=".52" height=".012" depth=".012" position="0 .407 .004" material="color: #756451; roughness: 1"></a-box>
-
-        <!-- Fixed depth references make viewpoint motion immediately visible. -->
-        <a-entity position="-.02 .414 .08">
-          <a-cylinder radius=".026" height=".008" material="color: #42525b"></a-cylinder>
-          <a-cylinder radius=".006" height=".065" position="0 .033 0" material="color: #42525b"></a-cylinder>
-          <a-cone radius-bottom=".034" radius-top=".012" height=".045" position="0 .078 0" material="color: #d7b66f"></a-cone>
-        </a-entity>
-        <a-entity position=".19 .414 .125">
-          <a-cylinder radius=".022" height=".038" position="0 .019 0" material="color: #b87859"></a-cylinder>
-          <a-sphere radius=".027" position="0 .059 0" scale=".62 1 .62" material="color: #557d52"></a-sphere>
-        </a-entity>
+        <a-entity gltf-model="#deskModel" position="-.2 .385 .035" scale=".55 .55 .55" shadow="cast: true; receive: true"></a-entity>
+        <a-entity gltf-model="#bookcaseModel" position=".12 .385 .015" scale=".35 .35 .35" shadow="cast: true; receive: true"></a-entity>
+        <a-entity gltf-model="#lampModel" position=".015 .575 .025" scale=".35 .35 .35" rotation="0 -22 0" shadow="cast: true"></a-entity>
       </a-entity>
 
-      <a-entity id="paperOne" class="clickable ar-source" position="-.16 .416 .04" data-step="0">
-        <a-ring mixin="sourceHalo" rotation="-90 0 0" position="0 -.008 0"></a-ring>
-        <a-box width=".105" height=".009" depth=".074" rotation="0 12 0" material="color: #f2eee4; roughness: .92" shadow="cast: true"></a-box>
-        <a-box width=".09" height=".007" depth=".064" position=".008 .011 -.006" rotation="0 -8 0" material="color: #e7e0d2; roughness: .92"></a-box>
+      <a-entity id="chair" class="clickable ar-source" position="-.32 .385 .09" scale=".32 .32 .32" data-step="0">
+        <a-ring mixin="sourceHalo" rotation="-90 0 0" position=".07 .01 -.07" scale="3 3 3"></a-ring>
+        <a-entity gltf-model="#chairModel" shadow="cast: true; receive: true"></a-entity>
       </a-entity>
-      <a-entity id="paperTwo" class="clickable ar-source" position=".035 .416 .125" data-step="1" visible="false">
-        <a-ring mixin="sourceHalo" rotation="-90 0 0" position="0 -.008 0"></a-ring>
-        <a-box width=".105" height=".009" depth=".074" rotation="0 -15 0" material="color: #f2eee4; roughness: .92" shadow="cast: true"></a-box>
-        <a-box width=".09" height=".007" depth=".064" position="-.008 .011 -.006" rotation="0 9 0" material="color: #e7e0d2; roughness: .92"></a-box>
-      </a-entity>
-      <a-entity id="binTarget" class="clickable ar-target" position=".17 .445 .055" data-destination="bin">
-        <a-ring mixin="targetHalo" rotation="-90 0 0" position="0 -.028 0"></a-ring>
-        <a-cylinder radius=".055" height=".10" open-ended="true" material="color: #46545c; transparent: true; opacity: .72; wireframe: true"></a-cylinder>
+      <a-entity id="chairTarget" class="clickable ar-target" position=".015 .39 -.025" data-destination="chairSpot">
+        <a-ring mixin="targetHalo" rotation="-90 0 0"></a-ring>
       </a-entity>
 
-      <a-entity id="tissue" class="clickable ar-source" position="-.10 .423 .045" data-step="2" visible="false">
-        <a-ring mixin="sourceHalo" rotation="-90 0 0" position="0 -.015 0"></a-ring>
-        <a-box width=".095" height=".014" depth=".062" rotation="0 18 -3" material="color: #f8f8f4; roughness: 1"></a-box>
+      <a-entity id="screen" class="clickable ar-source" position=".25 .385 .085" scale=".38 .38 .38" data-step="1" visible="false">
+        <a-ring mixin="sourceHalo" rotation="-90 0 0" position=".12 .005 -.05" scale="2.4 2.4 2.4"></a-ring>
+        <a-entity gltf-model="#screenModel" shadow="cast: true"></a-entity>
       </a-entity>
-      <a-entity id="spillTarget" class="clickable ar-target" position="-.16 .407 .13" data-destination="spill" visible="false">
-        <a-ring mixin="targetHalo" rotation="-90 0 0" position="0 .002 0"></a-ring>
-        <a-circle radius=".064" rotation="-90 0 0" scale="1.45 1 .68" material="color: #5a3525; transparent: true; opacity: .76; shader: flat"></a-circle>
-      </a-entity>
-
-      <a-entity id="mug" class="clickable ar-source" position="-.13 .44 .11" rotation="0 0 82" data-step="3" visible="false">
-        <a-ring mixin="sourceHalo" rotation="-90 0 0" position="0 -.038 0"></a-ring>
-        <a-cylinder radius=".037" height=".078" material="color: #334c5c; roughness: .78" shadow="cast: true"></a-cylinder>
-        <a-torus radius=".032" radius-tubular=".007" rotation="0 0 90" position=".043 .006 0" material="color: #334c5c"></a-torus>
+      <a-entity id="screenTarget" class="clickable ar-target" position="-.08 .59 .025" data-destination="screenSpot" visible="false">
+        <a-ring mixin="targetHalo" rotation="-90 0 0"></a-ring>
       </a-entity>
 
-      <a-entity id="documents" class="clickable ar-source" position="-.07 .428 .045" data-step="4" visible="false">
-        <a-ring mixin="sourceHalo" rotation="-90 0 0" position="0 -.024 0"></a-ring>
-        <a-box width=".12" height=".018" depth=".075" material="color: #c7d5d8"></a-box>
-        <a-box width=".115" height=".015" depth=".072" position=".005 .017 0" material="color: #d9c89e"></a-box>
-        <a-box width=".117" height=".014" depth=".073" position="-.003 .032 0" material="color: #aebfc3"></a-box>
+      <a-entity id="books" class="clickable ar-source" position="-.17 .39 .12" scale=".65 .65 .65" data-step="2" visible="false">
+        <a-ring mixin="sourceHalo" rotation="-90 0 0" position=".07 .005 -.04" scale="1.7 1.7 1.7"></a-ring>
+        <a-entity gltf-model="#booksModel" shadow="cast: true"></a-entity>
       </a-entity>
-      <a-entity id="shelfTarget" class="clickable ar-target" position=".17 .47 .12" data-destination="shelf" visible="false">
-        <a-ring mixin="targetHalo" rotation="-90 0 0" position="0 -.07 0"></a-ring>
-        <a-box width=".19" height=".018" depth=".10" position="0 -.01 0" material="color: #4f5961"></a-box>
-        <a-box width=".018" height=".13" depth=".10" position="-.086 .045 0" material="color: #4f5961"></a-box>
-        <a-box width=".018" height=".13" depth=".10" position=".086 .045 0" material="color: #4f5961"></a-box>
+      <a-entity id="booksTarget" class="clickable ar-target" position=".18 .47 .02" data-destination="booksSpot" visible="false">
+        <a-ring mixin="targetHalo" rotation="-90 0 0"></a-ring>
       </a-entity>
 
-      <a-entity id="successBurst" visible="false" position="0 .405 .08">
+      <a-entity id="storageBox" class="clickable ar-source" position=".27 .385 .105" scale=".38 .38 .38" data-step="3" visible="false">
+        <a-ring mixin="sourceHalo" rotation="-90 0 0" position=".1 .005 -.1" scale="2 2 2"></a-ring>
+        <a-entity gltf-model="#boxModel" shadow="cast: true"></a-entity>
+      </a-entity>
+      <a-entity id="boxTarget" class="clickable ar-target" position="-.27 .39 .09" data-destination="boxSpot" visible="false">
+        <a-ring mixin="targetHalo" rotation="-90 0 0"></a-ring>
+      </a-entity>
+
+      <a-entity id="plant" class="clickable ar-source" position=".29 .385 .12" scale=".42 .42 .42" data-step="4" visible="false">
+        <a-ring mixin="sourceHalo" rotation="-90 0 0" position=".08 .005 -.1" scale="2 2 2"></a-ring>
+        <a-entity gltf-model="#plantModel" shadow="cast: true"></a-entity>
+      </a-entity>
+      <a-entity id="plantTarget" class="clickable ar-target" position=".05 .59 .08" data-destination="plantSpot" visible="false">
+        <a-ring mixin="targetHalo" rotation="-90 0 0"></a-ring>
+      </a-entity>
+
+      <a-entity id="successBurst" visible="false" position="0 .39 .08">
         <a-ring radius-inner=".07" radius-outer=".078" rotation="-90 0 0" material="color: #8bffb0; transparent: true; opacity: 1; shader: flat"></a-ring>
       </a-entity>
-
-      <a-entity id="cleanOfficeReveal" visible="false">
-        <a-entity position="0 .445 .08" animation="property: position; from: 0 .445 .08; to: 0 .46 .08; dur: 1800; dir: alternate; loop: true; easing: easeInOutSine">
-          <a-cylinder radius=".045" height=".07" material="color: #a66f52; roughness: .9"></a-cylinder>
-          <a-sphere radius=".055" position="0 .075 0" scale=".62 1 .62" material="color: #557d52; roughness: 1"></a-sphere>
-          <a-sphere radius=".045" position="-.04 .082 0" scale=".48 1 .42" rotation="0 0 -32" material="color: #6c9365"></a-sphere>
-          <a-sphere radius=".045" position=".04 .082 0" scale=".48 1 .42" rotation="0 0 32" material="color: #6c9365"></a-sphere>
-        </a-entity>
-        <a-plane width=".29" height=".06" position="0 .51 .012" material="color: #2d3b42; roughness: .8"></a-plane>
-        <a-text value="OFFICE RESTORED" align="center" width=".5" position="0 .506 .024" color="#f4efe5"></a-text>
-      </a-entity>
+      <a-entity id="cleanOfficeReveal" visible="false"></a-entity>
     </a-entity>
   </a-scene>
 

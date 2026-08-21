@@ -1,22 +1,25 @@
 AFRAME.registerComponent('office-ar-controller',{init:function(){
   const root=this.el;
-  const taskSources=['paperOne','paperTwo','tissue','mug','documents'];
-  const destinations=['bin','bin','spill',null,'shelf'];
+  const taskSources=['chair','screen','books','storageBox','plant'];
+  const destinations=['chairSpot','screenSpot','booksSpot','boxSpot','plantSpot'];
   const instructions=[
-    'Find the glowing papers on the desk extension',
-    'Move sideways to find the second paper behind the lamp',
-    'Find the tissue, then clean the spill at the back',
-    'Tap the fallen mug to stand it upright',
-    'Find the documents, then place them on the shelf',
-    'Office restored—move left and right to inspect the diorama'
+    'Select the office chair, then its place under the desk',
+    'Place the monitor on the desktop',
+    'Move the books onto the bookcase',
+    'Store the open box beside the desk',
+    'Finish the office by placing the plant on the desk',
+    'Office assembled—move left and right to inspect the models'
   ];
-  const confirmations=['First paper cleared','Both papers cleared','Spill cleaned','Mug placed upright','Documents shelved'];
+  const confirmations=['Chair positioned','Monitor installed','Books shelved','Box stored','Plant placed'];
   const sourceEls=taskSources.map(id=>document.getElementById(id));
   const targetEls={
-    bin:document.getElementById('binTarget'),
-    spill:document.getElementById('spillTarget'),
-    shelf:document.getElementById('shelfTarget')
+    chairSpot:document.getElementById('chairTarget'),
+    screenSpot:document.getElementById('screenTarget'),
+    booksSpot:document.getElementById('booksTarget'),
+    boxSpot:document.getElementById('boxTarget'),
+    plantSpot:document.getElementById('plantTarget')
   };
+  const destinationLabels={chairSpot:'chair position',screenSpot:'desktop',booksSpot:'bookcase',boxSpot:'storage position',plantSpot:'plant position'};
   const instruction=document.getElementById('instruction');
   const progressBar=document.getElementById('progressBar');
   const progressCount=document.getElementById('progressCount');
@@ -24,7 +27,15 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
   const undo=document.getElementById('undoAr');
   const successBurst=document.getElementById('successBurst');
   const cleanOfficeReveal=document.getElementById('cleanOfficeReveal');
+  const originalPositions=sourceEls.map(el=>el.object3D.position.clone());
   const originalRotations=sourceEls.map(el=>el.object3D.rotation.clone());
+  const placedPositions=[
+    new THREE.Vector3(.015,.385,-.025),
+    new THREE.Vector3(-.08,.575,.025),
+    new THREE.Vector3(.145,.435,.015),
+    new THREE.Vector3(-.29,.385,.075),
+    new THREE.Vector3(.045,.575,.075)
+  ];
   let step=0,selected=false,tracking=false,audioContext=null;
 
   this.enableAudio=()=>{
@@ -47,8 +58,13 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
   };
   const render=()=>{
     sourceEls.forEach((el,index)=>{
-      setVisible(el,index===step&&step<5);
+      const completed=index<step;
+      const active=index===step&&step<5;
+      setVisible(el,completed||active);
+      el.object3D.position.copy(completed?placedPositions[index]:originalPositions[index]);
       el.object3D.rotation.copy(originalRotations[index]);
+      el.classList.toggle('clickable',active);
+      setVisible(el.querySelector('a-ring'),active);
     });
     Object.values(targetEls).forEach(el=>setVisible(el,false));
     if(step<5&&destinations[step])setVisible(targetEls[destinations[step]],true);
@@ -57,8 +73,8 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
     resetHalos();
     instruction.textContent=tracking?instructions[step]:'Find the office poster to continue';
     spatialHint.textContent=step===5
-      ? 'The desk projects beyond the poster. Change viewpoint to see its depth.'
-      : 'Look above the poster, then move left and right to reveal hidden depth.';
+      ? 'Change viewpoint to inspect the completed 3D office.'
+      : 'Move sideways to compare the foreground and background models.';
     progressBar.style.width=`${step*20}%`;
     progressCount.textContent=`${step} / 5`;
     undo.disabled=step===0;
@@ -81,7 +97,6 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
   };
   const burst=position=>{
     successBurst.object3D.position.copy(position);
-    successBurst.object3D.position.y=.418;
     const ring=successBurst.querySelector('a-ring');
     ring.removeAttribute('animation__expand');
     ring.removeAttribute('animation__fade');
@@ -110,8 +125,8 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
     selected=true;
     el.querySelector('a-ring')?.setAttribute('material','color','#ffffff');
     targetEls[destinations[step]].querySelector('a-ring')?.setAttribute('material','color','#ffffff');
-    instruction.textContent=`Now tap the glowing ${destinations[step]}`;
-    toast(`Object selected—find the ${destinations[step]}.`);
+    instruction.textContent=`Now tap the glowing ${destinationLabels[destinations[step]]}`;
+    toast(`Selected—find the ${destinationLabels[destinations[step]]}.`);
   }));
   Object.entries(targetEls).forEach(([name,el])=>el.addEventListener('click',()=>{
     if(selected&&destinations[step]===name)complete();

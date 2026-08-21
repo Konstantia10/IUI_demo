@@ -1,6 +1,6 @@
 # Terrible Office — WebAR edition
 
-This is a separate AR version of the 2D project. It uses A-Frame 1.5.0 and MindAR 1.2.5 image tracking.
+This is a separate AR version of the 2D project. It uses A-Frame 1.5.0, MindAR 1.2.5 image tracking, and selected models from Kenney's Furniture Kit.
 
 ## Run
 
@@ -22,9 +22,10 @@ For phone testing, deploy this folder to an HTTPS static host. Opening it throug
 - The user searches and moves physically, practicing spatial attention rather than selecting from an abstract menu.
 - Target-found/lost feedback teaches correct scanning distance and framing.
 - Animated spatial confirmation shows where an item came from and where it belongs.
-- A restrained miniature desk projects beyond the poster's top edge instead of obscuring its image.
-- Foreground, middle, and back objects are widely separated so viewpoint movement produces clear parallax.
-- Only the current task object and destination glow, keeping the tracked poster readable.
+- A coherent modeled office projects beyond the poster's top edge instead of obscuring its image.
+- The desk, chair, monitor, lamp, bookcase, books, box, and plant are embedded-material GLB models.
+- Completed task objects remain in place, so the office visibly assembles over five steps.
+- Only the current model and destination glow, keeping the tracked poster readable.
 - Tones and vibration reinforce successful placement on supported devices.
 - The final task reveals a restored office without adding persistent clutter to the poster.
 - The image remains usable as a normal poster while the phone adds an optional interactive layer.
@@ -33,6 +34,7 @@ For phone testing, deploy this folder to an HTTPS static host. Opening it throug
 
 - `assets/office-target.mind`: compiled MindAR features for the office poster.
 - `assets/office-poster.jpg`: printable/displayable recognition target.
+- `assets/models/`: selected CC0 GLB files and license from Kenney's Furniture Kit.
 - `index.html`: A-Frame/MindAR scene and HUD.
 - `ar-app.js`: target tracking and cleanup state machine.
 - `styles.css`: mobile AR interface.
