@@ -11,8 +11,8 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
   const bin=document.getElementById('binTarget');
   const states=[
     // Coordinates measured from the 1448 x 1086 target. MindAR's target plane is 1 x .75.
-    {position:'.149 -.196 .012',scale:'.064 .064 .064',pulse:'property: scale; from: .061 .061 .061; to: .067 .067 .067; dur: 900; dir: alternate; loop: true; easing: easeInOutSine'},
-    {position:'.191 -.288 .012',scale:'.061 .061 .061',pulse:'property: scale; from: .058 .058 .058; to: .064 .064 .064; dur: 980; dir: alternate; loop: true; easing: easeInOutSine'}
+    {position:'.149 -.196 .003',scale:'.064 .064 .064',pulse:'property: scale; from: .061 .061 .061; to: .067 .067 .067; dur: 900; dir: alternate; loop: true; easing: easeInOutSine'},
+    {position:'.191 -.288 .003',scale:'.061 .061 .061',pulse:'property: scale; from: .058 .058 .058; to: .064 .064 .064; dur: 980; dir: alternate; loop: true; easing: easeInOutSine'}
   ];
   let step=0,tracking=false,busy=false,audioContext=null,drag=null;
 
@@ -201,6 +201,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   document.getElementById('startAr').onclick=()=>{
     if(isFilePage)return;
+    // Orientation locking is supported by some Android browsers. iOS Safari
+    // ignores it, so the CSS rotation guide remains the cross-platform fallback.
+    screen.orientation?.lock?.('landscape').catch(()=>{});
     target.components['office-ar-controller']?.enableAudio?.();
     startStatus.textContent='Starting camera and loading image recognition…';
     const start=()=>{

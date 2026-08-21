@@ -12,6 +12,8 @@ python3 -m http.server 4173
 
 Then open `http://localhost:4173/web-ar/` and allow camera access. Display `assets/office-poster.jpg` on another screen or print it, and point the camera at the complete poster.
 
+Use the phone in landscape orientation. The page requests a landscape lock on supporting browsers and displays a rotation guide elsewhere. Tracking uses MindAR's responsive One Euro filter defaults (`filterMinCF: 0.001`, `filterBeta: 1000`) so registered content follows camera movement without the severe lag caused by over-smoothing.
+
 Do not double-click `index.html` or open a `file:///...` address. Browsers block the camera and MindAR target loading from local-file pages.
 
 For phone testing, deploy this folder to an HTTPS static host. Opening it through a LAN IP over plain HTTP will normally block the camera.
