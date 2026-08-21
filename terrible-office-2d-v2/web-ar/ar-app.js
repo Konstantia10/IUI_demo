@@ -1,7 +1,7 @@
 AFRAME.registerComponent('office-ar-controller',{init:function(){
   const root=this.el;
   const sourceEls=[document.getElementById('paperOne'),document.getElementById('paperTwo')];
-  const instructions=['Tap the hovering paper ball on the desk','Now tap the paper ball beside the bin','Desk cleared—the photograph remains the environment'];
+  const instructions=['Drag the paper ball into the photographed bin','Now drag the second paper ball into the bin','Desk cleared—the photograph remains the environment'];
   const confirmations=['Paper tossed into the bin','Both paper balls cleared'];
   const instruction=document.getElementById('instruction');
   const progressBar=document.getElementById('progressBar');
@@ -10,10 +10,11 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
   const undo=document.getElementById('undoAr');
   const bin=document.getElementById('binTarget');
   const states=[
-    {position:'.18 -.195 .035',scale:'.09 .09 .09',hover:'property: position; from: .18 -.195 .035; to: .18 -.18 .05; dur: 1150; dir: alternate; loop: true; easing: easeInOutSine',turn:'property: rotation; from: -8 0 -6; to: 8 22 7; dur: 2300; dir: alternate; loop: true; easing: easeInOutSine'},
-    {position:'.325 -.275 .035',scale:'.085 .085 .085',hover:'property: position; from: .325 -.275 .035; to: .325 -.26 .05; dur: 1250; dir: alternate; loop: true; easing: easeInOutSine',turn:'property: rotation; from: 5 -12 4; to: -9 18 -8; dur: 2500; dir: alternate; loop: true; easing: easeInOutSine'}
+    // Coordinates measured from the 1448 x 1086 target. MindAR's target plane is 1 x .75.
+    {position:'.149 -.196 .012',scale:'.064 .064 .064',pulse:'property: scale; from: .061 .061 .061; to: .067 .067 .067; dur: 900; dir: alternate; loop: true; easing: easeInOutSine'},
+    {position:'.191 -.288 .012',scale:'.061 .061 .061',pulse:'property: scale; from: .058 .058 .058; to: .064 .064 .064; dur: 980; dir: alternate; loop: true; easing: easeInOutSine'}
   ];
-  let step=0,tracking=false,busy=false,audioContext=null;
+  let step=0,tracking=false,busy=false,audioContext=null,drag=null;
 
   this.enableAudio=()=>{
     const AudioContext=window.AudioContext||window.webkitAudioContext;
@@ -37,15 +38,16 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
       el.removeAttribute('animation__spin');
       el.setAttribute('position',states[index].position);
       el.setAttribute('scale',states[index].scale);
-      el.setAttribute('animation__hover',states[index].hover);
-      el.setAttribute('animation__turn',states[index].turn);
+      el.setAttribute('animation__pulse',states[index].pulse);
+      el.removeAttribute('animation__hover');
+      el.removeAttribute('animation__turn');
       setVisible(el,active);
       el.classList.toggle('clickable',active);
     });
     setVisible(bin,step<2);
     busy=false;
     instruction.textContent=tracking?instructions[step]:'Find the office poster to continue';
-    spatialHint.textContent=step===2?'The AR enhanced objects that already existed in the image.':'The digital paper is aligned with a paper ball in the photograph.';
+    spatialHint.textContent=step===2?'The AR enhanced objects that already existed in the image.':'Press the highlighted paper, move your finger to the real bin, then release.';
     progressBar.style.width=`${step*50}%`;
     progressCount.textContent=`${step} / 2`;
     undo.disabled=step===0;
@@ -66,12 +68,10 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
     });
     navigator.vibrate?.(35);
   };
-  sourceEls.forEach((el,index)=>el.addEventListener('click',()=>{
-    if(index!==step||busy)return;
+  const completeDrop=(el,index)=>{
     busy=true;
     el.classList.remove('clickable');
-    el.removeAttribute('animation__hover');
-    el.removeAttribute('animation__turn');
+    el.removeAttribute('animation__pulse');
     const start=el.object3D.position;
     el.setAttribute('animation__fly',`property: position; from: ${start.x} ${start.y} ${start.z}; to: .415 -.255 .075; dur: 720; easing: easeInQuad`);
     el.setAttribute('animation__shrink','property: scale; to: .015 .015 .015; dur: 720; easing: easeInQuad');
@@ -79,7 +79,66 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
     playSuccessSound();
     toast(confirmations[index]);
     setTimeout(()=>{step++;render();},760);
-  }));
+  };
+
+  // Convert a screen touch into the tracked image's local coordinate system. This
+  // keeps dragging registered even while the phone and target are both moving.
+  const screenToTarget=(event)=>{
+    const scene=root.sceneEl;
+    if(!scene?.camera||!scene.canvas)return null;
+    const rect=scene.canvas.getBoundingClientRect();
+    const pointer=new THREE.Vector2(
+      ((event.clientX-rect.left)/rect.width)*2-1,
+      -((event.clientY-rect.top)/rect.height)*2+1
+    );
+    const raycaster=new THREE.Raycaster();
+    raycaster.setFromCamera(pointer,scene.camera);
+    const plane=new THREE.Plane();
+    const normal=new THREE.Vector3(0,0,1).transformDirection(root.object3D.matrixWorld);
+    const origin=new THREE.Vector3().setFromMatrixPosition(root.object3D.matrixWorld);
+    plane.setFromNormalAndCoplanarPoint(normal,origin);
+    const worldPoint=new THREE.Vector3();
+    if(!raycaster.ray.intersectPlane(plane,worldPoint))return null;
+    return root.object3D.worldToLocal(worldPoint);
+  };
+  const onPointerDown=event=>{
+    if(!tracking||busy||step>1)return;
+    const point=screenToTarget(event);
+    const el=sourceEls[step];
+    if(!point||point.distanceTo(el.object3D.position)>.095)return;
+    event.preventDefault();
+    this.enableAudio();
+    el.removeAttribute('animation__pulse');
+    el.setAttribute('scale','.072 .072 .072');
+    drag={pointerId:event.pointerId,el,index:step};
+    scene.canvas?.setPointerCapture?.(event.pointerId);
+    toast('Move to the bin and release');
+  };
+  const onPointerMove=event=>{
+    if(!drag||event.pointerId!==drag.pointerId)return;
+    event.preventDefault();
+    const point=screenToTarget(event);
+    if(point)drag.el.setAttribute('position',`${point.x} ${point.y} .055`);
+  };
+  const onPointerUp=event=>{
+    if(!drag||event.pointerId!==drag.pointerId)return;
+    const current=drag;
+    drag=null;
+    const point=screenToTarget(event)||current.el.object3D.position;
+    const inBin=Math.hypot(point.x-.38,point.y+.281)<.105;
+    if(inBin)completeDrop(current.el,current.index);
+    else{
+      current.el.setAttribute('position',states[current.index].position);
+      current.el.setAttribute('scale',states[current.index].scale);
+      current.el.setAttribute('animation__pulse',states[current.index].pulse);
+      toast('Drop it inside the glowing bin');
+    }
+  };
+  const scene=root.sceneEl;
+  scene.addEventListener('pointerdown',onPointerDown,{passive:false});
+  scene.addEventListener('pointermove',onPointerMove,{passive:false});
+  scene.addEventListener('pointerup',onPointerUp,{passive:false});
+  scene.addEventListener('pointercancel',onPointerUp,{passive:false});
   root.addEventListener('targetFound',()=>{
     tracking=true;
     document.getElementById('trackingBadge').textContent='Objects aligned';

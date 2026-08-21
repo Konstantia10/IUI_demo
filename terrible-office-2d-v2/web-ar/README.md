@@ -22,9 +22,9 @@ For phone testing, deploy this folder to an HTTPS static host. Opening it throug
 - The user searches and moves physically, practicing spatial attention rather than selecting from an abstract menu.
 - Target-found/lost feedback teaches correct scanning distance and framing.
 - Animated spatial confirmation shows where an item came from and where it belongs.
-- AR models align with objects that already exist in the photograph instead of creating a separate scene.
-- Crumpled paper balls lift subtly from their photographed counterparts and retain the image as context.
-- Tapping a paper ball animates it along the desk into the photographed waste bin.
+- Photo-real paper sprites align with objects that already exist in the photograph instead of creating a separate scene.
+- Crumpled paper balls rustle subtly in place and lift only while the user is dragging them.
+- Direct pointer-to-target-plane dragging remains registered while the camera moves.
 - The experience uses no platform, room, labels, or furniture overlay.
 - Tones and vibration reinforce successful placement on supported devices.
 - The final task reveals a restored office without adding persistent clutter to the poster.
@@ -34,8 +34,7 @@ For phone testing, deploy this folder to an HTTPS static host. Opening it throug
 
 - `assets/office-target.mind`: compiled MindAR features for the office poster.
 - `assets/office-poster.jpg`: printable/displayable recognition target.
-- `assets/models/crumpled-paper.gltf`: generated faceted paper mesh with embedded PBR material.
-- `tools/generate-crumpled-paper.mjs`: deterministic source for regenerating the paper model.
+- `assets/paper-ball-photo.png`: photo-real transparent paper sprite used by the tracked interaction.
 - `index.html`: A-Frame/MindAR scene and HUD.
 - `ar-app.js`: target tracking and cleanup state machine.
 - `styles.css`: mobile AR interface.

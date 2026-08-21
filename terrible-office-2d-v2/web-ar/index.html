@@ -16,11 +16,11 @@
     <div class="welcome-card">
       <p class="eyebrow">Image-tracked WebAR</p>
       <h1>Clean the terrible office—in its real place</h1>
-      <p id="startStatus">Point your camera at the office poster. Paper balls already visible in the photograph will lift from the desk and come alive.</p>
+      <p id="startStatus">Point your camera at the office poster. Paper balls already visible in the photograph will subtly come alive in place.</p>
       <ol>
         <li>Allow camera access.</li>
         <li>Fit the complete poster inside the guide.</li>
-        <li>Tap each hovering paper ball to toss it into the real bin.</li>
+        <li>Drag each highlighted paper ball into the bin visible in the photograph.</li>
       </ol>
       <button id="startAr" class="primary">Start AR cleanup</button>
       <button id="showTarget" class="secondary">Show target image</button>
@@ -74,7 +74,7 @@
     loading-screen="enabled: false">
 
     <a-assets>
-      <a-asset-item id="crumpledPaperModel" src="assets/models/crumpled-paper.gltf"></a-asset-item>
+      <img id="paperBallPhoto" src="assets/paper-ball-photo.png" alt="">
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false" cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .clickable"></a-camera>
@@ -83,18 +83,16 @@
       <a-light type="ambient" color="#ffffff" intensity="1.05"></a-light>
       <a-light type="directional" color="#fff9ed" intensity="1.3" position="-.5 .6 .8"></a-light>
 
-      <!-- Models align with paper balls that already exist in the target photograph. -->
-      <a-entity id="paperOne" class="clickable ar-source" position=".18 -.195 .035" scale=".09 .09 .09" data-step="0"
-        animation__hover="property: position; from: .18 -.195 .035; to: .18 -.18 .05; dur: 1150; dir: alternate; loop: true; easing: easeInOutSine"
-        animation__turn="property: rotation; from: -8 0 -6; to: 8 22 7; dur: 2300; dir: alternate; loop: true; easing: easeInOutSine">
-        <a-entity gltf-model="#crumpledPaperModel" shadow="cast: true"></a-entity>
+      <!-- Anchors are measured from the actual paper-ball pixels in the target photograph. -->
+      <a-entity id="paperOne" class="clickable ar-source" position=".149 -.196 .012" scale=".064 .064 .064" data-step="0"
+        animation__pulse="property: scale; from: .061 .061 .061; to: .067 .067 .067; dur: 900; dir: alternate; loop: true; easing: easeInOutSine">
+        <a-image src="#paperBallPhoto" width="1" height="1" material="transparent: true; alphaTest: .03; shader: flat; side: double"></a-image>
       </a-entity>
-      <a-entity id="paperTwo" class="ar-source" position=".325 -.275 .035" scale=".085 .085 .085" data-step="1" visible="false"
-        animation__hover="property: position; from: .325 -.275 .035; to: .325 -.26 .05; dur: 1250; dir: alternate; loop: true; easing: easeInOutSine"
-        animation__turn="property: rotation; from: 5 -12 4; to: -9 18 -8; dur: 2500; dir: alternate; loop: true; easing: easeInOutSine">
-        <a-entity gltf-model="#crumpledPaperModel" shadow="cast: true"></a-entity>
+      <a-entity id="paperTwo" class="ar-source" position=".191 -.288 .012" scale=".061 .061 .061" data-step="1" visible="false"
+        animation__pulse="property: scale; from: .058 .058 .058; to: .064 .064 .064; dur: 980; dir: alternate; loop: true; easing: easeInOutSine">
+        <a-image src="#paperBallPhoto" width="1" height="1" material="transparent: true; alphaTest: .03; shader: flat; side: double"></a-image>
       </a-entity>
-      <a-entity id="binTarget" position=".415 -.255 .02">
+      <a-entity id="binTarget" position=".38 -.281 .02">
         <a-ring radius-inner=".065" radius-outer=".071" material="color: #8bffb0; transparent: true; opacity: .76; shader: flat"
           animation="property: scale; from: .9 .9 .9; to: 1.08 1.08 1.08; dur: 900; dir: alternate; loop: true; easing: easeInOutSine"></a-ring>
       </a-entity>
