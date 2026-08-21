@@ -26,6 +26,7 @@ For phone testing, deploy this folder to an HTTPS static host. Opening it throug
 - Animated spatial confirmation shows where an item came from and where it belongs.
 - Photo-real paper sprites align with objects that already exist in the photograph instead of creating a separate scene.
 - Crumpled paper balls rustle subtly in place and lift only while the user is dragging them.
+- The photographed wastebasket subtly breathes in place and reacts while a paper ball is being dragged toward it; no abstract target ring is used.
 - Direct pointer-to-target-plane dragging remains registered while the camera moves.
 - The experience uses no platform, room, labels, or furniture overlay.
 - Tones and vibration reinforce successful placement on supported devices.
@@ -37,6 +38,7 @@ For phone testing, deploy this folder to an HTTPS static host. Opening it throug
 - `assets/office-target.mind`: compiled MindAR features for the office poster.
 - `assets/office-poster.jpg`: printable/displayable recognition target.
 - `assets/paper-ball-photo.png`: photo-real transparent paper sprite used by the tracked interaction.
+- `assets/wastebasket-photo.png`: photo-real transparent wastebasket sprite aligned with the photographed bin.
 - `index.html`: A-Frame/MindAR scene and HUD.
 - `ar-app.js`: target tracking and cleanup state machine.
 - `styles.css`: mobile AR interface.

@@ -110,6 +110,7 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
     this.enableAudio();
     el.removeAttribute('animation__pulse');
     el.setAttribute('scale','.072 .072 .072');
+    bin.setAttribute('animation__ready','property: rotation; from: 0 0 -1.3; to: 0 0 1.3; dur: 190; dir: alternate; loop: true; easing: easeInOutSine');
     drag={pointerId:event.pointerId,el,index:step};
     scene.canvas?.setPointerCapture?.(event.pointerId);
     toast('Move to the bin and release');
@@ -124,8 +125,10 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
     if(!drag||event.pointerId!==drag.pointerId)return;
     const current=drag;
     drag=null;
+    bin.removeAttribute('animation__ready');
+    bin.setAttribute('rotation','0 0 0');
     const point=screenToTarget(event)||current.el.object3D.position;
-    const inBin=Math.hypot(point.x-.38,point.y+.281)<.105;
+    const inBin=Math.hypot(point.x-.376,point.y+.278)<.105;
     if(inBin)completeDrop(current.el,current.index);
     else{
       current.el.setAttribute('position',states[current.index].position);
