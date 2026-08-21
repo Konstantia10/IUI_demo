@@ -20,7 +20,8 @@
       <ol>
         <li>Allow camera access.</li>
         <li>Fit the whole poster inside the view.</li>
-        <li>Tap the glowing object, then its destination.</li>
+        <li>Move the phone sideways to explore the depth.</li>
+        <li>Drag each glowing object to its destination.</li>
       </ol>
       <button id="startAr" class="primary">Start AR cleanup</button>
       <button id="showTarget" class="secondary">Show target image</button>
@@ -47,6 +48,7 @@
   <aside class="mission-panel">
     <p class="eyebrow">Spatial mission <span id="progressCount">0 / 5</span></p>
     <h2 id="instruction">Scan the office poster to begin</h2>
+    <p id="spatialHint" class="spatial-hint">Move left and right—the AR objects occupy real depth.</p>
     <div class="progress"><span id="progressBar"></span></div>
     <button id="undoAr" disabled>Undo</button>
     <button id="resetAr">Reset</button>
@@ -73,13 +75,15 @@
     loading-screen="enabled: false">
 
     <a-assets>
-      <a-mixin id="hotspot" geometry="primitive: circle; radius: .045" material="color: #65d6ff; transparent: true; opacity: .82; shader: flat" animation__pulse="property: scale; from: 1 1 1; to: 1.24 1.24 1.24; dur: 700; dir: alternate; loop: true; easing: easeInOutSine"></a-mixin>
-      <a-mixin id="destination" geometry="primitive: ring; radiusInner: .06; radiusOuter: .078" material="color: #8bffb0; transparent: true; opacity: .45; shader: flat"></a-mixin>
+      <a-mixin id="hotspot" geometry="primitive: circle; radius: .052" material="color: #65d6ff; transparent: true; opacity: .52; shader: flat" animation__pulse="property: scale; from: 1 1 1; to: 1.18 1.18 1.18; dur: 700; dir: alternate; loop: true; easing: easeInOutSine"></a-mixin>
+      <a-mixin id="destination" geometry="primitive: ring; radiusInner: .065; radiusOuter: .082" material="color: #8bffb0; transparent: true; opacity: .55; shader: flat" animation__destination="property: rotation; to: 0 0 360; dur: 5000; loop: true; easing: linear"></a-mixin>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false" cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .clickable, .drag-surface"></a-camera>
 
     <a-entity id="officeTarget" mindar-image-target="targetIndex: 0">
+      <a-light type="ambient" color="#d8eeff" intensity="1.15"></a-light>
+      <a-light type="directional" color="#ffffff" intensity="1.1" position="-.4 .7 .8"></a-light>
       <a-plane id="dragSurface" class="drag-surface" width="1" height=".75" position="0 0 .014" material="transparent: true; opacity: 0; depthWrite: false"></a-plane>
       <a-entity id="frame" position="0 0 .012">
         <a-plane position="0 .393 0" width="1.04" height=".008" material="color: #65d6ff; shader: flat"></a-plane>
@@ -88,37 +92,106 @@
         <a-plane position=".516 0 0" width=".008" height=".79" material="color: #65d6ff; shader: flat"></a-plane>
       </a-entity>
 
+      <!-- Ambient objects sit at different Z depths, creating parallax as the learner moves. -->
+      <a-entity id="livingOffice" class="living-office">
+        <a-entity position="-.19 .145 .055" rotation="-5 8 0">
+          <a-box width=".22" height=".135" depth=".025" material="color: #17293b; roughness: .45"></a-box>
+          <a-plane width=".188" height=".105" position="0 0 .014" material="color: #2b8ba6; transparent: true; opacity: .72; shader: flat"
+            animation__screen="property: material.opacity; from: .55; to: .95; dur: 1400; dir: alternate; loop: true"></a-plane>
+          <a-plane width=".14" height=".006" position="0 .02 .016" material="color: #65d6ff; shader: flat"
+            animation__scan="property: position; from: 0 -.038 .016; to: 0 .038 .016; dur: 1800; loop: true; easing: easeInOutSine"></a-plane>
+          <a-cylinder radius=".014" height=".06" rotation="90 0 0" position="0 -.098 0" material="color: #334b5e"></a-cylinder>
+          <a-box width=".12" height=".018" depth=".055" position="0 -.13 .018" material="color: #263b4d"></a-box>
+        </a-entity>
+
+        <a-entity position=".31 .235 .11" animation__float="property: position; from: .31 .225 .11; to: .31 .255 .11; dur: 2200; dir: alternate; loop: true; easing: easeInOutSine">
+          <a-sphere radius=".027" material="color: #ffd166; emissive: #ffb703; emissiveIntensity: .55"></a-sphere>
+          <a-cone radius-bottom=".065" radius-top=".025" height=".09" position="0 -.055 -.015" rotation="90 0 0" material="color: #ffd166; transparent: true; opacity: .16; side: double; shader: flat"></a-cone>
+        </a-entity>
+
+        <a-entity id="deskFan" position="-.395 .08 .085" rotation="0 -12 0">
+          <a-cylinder radius=".048" height=".018" rotation="90 0 0" material="color: #233b4c"></a-cylinder>
+          <a-entity position="0 0 .014" animation__spin="property: rotation; to: 0 0 360; dur: 1050; loop: true; easing: linear">
+            <a-box width=".09" height=".012" depth=".006" material="color: #8fd8e8"></a-box>
+            <a-box width=".012" height=".09" depth=".006" material="color: #8fd8e8"></a-box>
+          </a-entity>
+          <a-cylinder radius=".012" height=".05" position="0 -.065 0" material="color: #334f60"></a-cylinder>
+          <a-cylinder radius=".045" height=".012" rotation="90 0 0" position="0 -.095 0" material="color: #334f60"></a-cylinder>
+        </a-entity>
+
+        <a-entity id="steam" position="-.405 -.105 .095">
+          <a-sphere radius=".011" material="color: #ffffff; transparent: true; opacity: .48; shader: flat"
+            animation="property: position; from: 0 0 0; to: -.018 .105 .02; dur: 1900; loop: true; easing: easeOutSine"
+            animation__fade="property: material.opacity; from: .52; to: 0; dur: 1900; loop: true"></a-sphere>
+          <a-sphere radius=".008" position=".014 .025 0" material="color: #ffffff; transparent: true; opacity: .4; shader: flat"
+            animation="property: position; from: .014 .025 0; to: .03 .125 .03; dur: 2350; delay: 600; loop: true; easing: easeOutSine"
+            animation__fade="property: material.opacity; from: .45; to: 0; dur: 2350; delay: 600; loop: true"></a-sphere>
+        </a-entity>
+
+        <a-entity id="flies" data-visible-until="2">
+          <a-sphere radius=".006" position="-.28 -.205 .12" material="color: #1b1611"
+            animation="property: position; from: -.28 -.205 .12; to: -.18 -.15 .18; dur: 1250; dir: alternate; loop: true; easing: easeInOutSine"></a-sphere>
+          <a-sphere radius=".005" position="-.25 -.16 .17" material="color: #1b1611"
+            animation="property: position; from: -.25 -.16 .17; to: -.34 -.12 .1; dur: 950; dir: alternate; loop: true; easing: easeInOutSine"></a-sphere>
+        </a-entity>
+      </a-entity>
+
       <a-entity id="paperOne" class="clickable ar-source" mixin="hotspot" position=".20 -.29 .025" data-step="0">
+        <a-box width=".095" height=".068" depth=".006" position="0 0 .035" rotation="-12 18 8" material="color: #f7f2df; roughness: .8" shadow="cast: true"></a-box>
+        <a-box width=".087" height=".063" depth=".006" position=".01 .004 .049" rotation="8 -14 -5" material="color: #f7f2df; roughness: .8" shadow="cast: true"></a-box>
         <a-text value="PAPER 1" align="center" width=".42" position="0 .075 .002" color="#ffffff"></a-text>
       </a-entity>
       <a-entity id="paperTwo" class="clickable ar-source" mixin="hotspot" position=".15 -.20 .025" data-step="1" visible="false">
+        <a-box width=".095" height=".068" depth=".006" position="0 0 .038" rotation="9 -22 -7" material="color: #f7f2df; roughness: .8" shadow="cast: true"></a-box>
+        <a-box width=".086" height=".061" depth=".006" position="-.008 .003 .052" rotation="-7 12 6" material="color: #f7f2df; roughness: .8" shadow="cast: true"></a-box>
         <a-text value="PAPER 2" align="center" width=".42" position="0 .075 .002" color="#ffffff"></a-text>
       </a-entity>
       <a-entity id="binTarget" class="clickable ar-target" mixin="destination" position=".40 -.27 .025" data-destination="bin">
+        <a-box width=".11" height=".105" depth=".075" position="0 .01 .045" material="color: #35546a; transparent: true; opacity: .76; wireframe: true"></a-box>
         <a-text value="BIN" align="center" width=".38" position="0 -.08 .002" color="#8bffb0"></a-text>
       </a-entity>
 
       <a-entity id="tissue" class="clickable ar-source" mixin="hotspot" position="-.13 -.12 .025" data-step="2" visible="false">
-        <a-plane width=".085" height=".055" material="color: #ffffff; opacity: .92; shader: flat"></a-plane>
+        <a-box width=".09" height=".058" depth=".012" position="0 0 .03" rotation="-6 18 5" material="color: #ffffff; opacity: .94" shadow="cast: true"></a-box>
         <a-text value="TISSUE" align="center" width=".38" position="0 .07 .002" color="#ffffff"></a-text>
       </a-entity>
       <a-entity id="spillTarget" class="clickable ar-target" mixin="destination" position="-.30 -.27 .025" data-destination="spill" visible="false">
+        <a-circle radius=".055" position="0 0 .012" scale="1.45 .62 1" material="color: #6b3d24; transparent: true; opacity: .78; shader: flat"></a-circle>
         <a-text value="SPILL" align="center" width=".38" position="0 -.08 .002" color="#8bffb0"></a-text>
       </a-entity>
 
       <a-entity id="mug" class="clickable ar-source" mixin="hotspot" position="-.43 -.22 .025" data-step="3" visible="false">
+        <a-cylinder radius=".036" height=".07" rotation="90 0 78" position="0 0 .045" material="color: #f25f5c; roughness: .6" shadow="cast: true"></a-cylinder>
+        <a-torus radius=".034" radius-tubular=".008" rotation="0 90 0" position="-.045 .004 .05" material="color: #f25f5c"></a-torus>
         <a-text value="MUG" align="center" width=".38" position="0 .075 .002" color="#ffffff"></a-text>
       </a-entity>
 
       <a-entity id="documents" class="clickable ar-source" mixin="hotspot" position=".06 -.13 .025" data-step="4" visible="false" scale="1.25 1.25 1.25">
+        <a-box width=".11" height=".016" depth=".07" position="0 -.012 .034" rotation="-4 8 2" material="color: #ef476f"></a-box>
+        <a-box width=".105" height=".016" depth=".07" position=".005 .005 .043" rotation="2 -5 -1" material="color: #ffd166"></a-box>
+        <a-box width=".108" height=".016" depth=".07" position="-.002 .022 .052" rotation="-2 4 1" material="color: #65d6ff"></a-box>
         <a-text value="DOCUMENTS" align="center" width=".5" position="0 .075 .002" color="#ffffff"></a-text>
       </a-entity>
       <a-entity id="shelfTarget" class="clickable ar-target" mixin="destination" position=".39 .05 .025" data-destination="shelf" visible="false">
+        <a-box width=".16" height=".018" depth=".07" position="0 -.025 .042" material="color: #8bffb0; transparent: true; opacity: .68"></a-box>
         <a-text value="SHELF" align="center" width=".38" position="0 -.08 .002" color="#8bffb0"></a-text>
       </a-entity>
 
       <a-entity id="successBurst" visible="false" position="0 0 .04">
         <a-ring radius-inner=".08" radius-outer=".09" color="#8bffb0" animation="property: scale; from: .2 .2 .2; to: 5 5 5; dur: 700; easing: easeOutCubic"></a-ring>
+      </a-entity>
+
+      <a-entity id="cleanOfficeReveal" visible="false" position="0 0 .075">
+        <a-ring radius-inner=".34" radius-outer=".345" color="#8bffb0" material="transparent: true; opacity: .65; shader: flat"
+          animation="property: rotation; to: 0 0 360; dur: 9000; loop: true; easing: linear"></a-ring>
+        <a-entity position=".32 -.04 .055" animation="property: position; from: .32 -.05 .055; to: .32 -.025 .055; dur: 1800; dir: alternate; loop: true; easing: easeInOutSine">
+          <a-cylinder radius=".035" height=".055" position="0 -.035 0" material="color: #e76f51"></a-cylinder>
+          <a-sphere radius=".04" position="0 .015 0" scale=".55 1 .45" material="color: #55c271"></a-sphere>
+          <a-sphere radius=".035" position="-.035 .035 0" scale=".5 1 .4" rotation="0 0 -35" material="color: #8bffb0"></a-sphere>
+          <a-sphere radius=".035" position=".035 .035 0" scale=".5 1 .4" rotation="0 0 35" material="color: #8bffb0"></a-sphere>
+        </a-entity>
+        <a-text value="OFFICE RESTORED" align="center" width=".75" position="0 .32 .08" color="#8bffb0"
+          animation="property: scale; from: .92 .92 .92; to: 1.08 1.08 1.08; dur: 1200; dir: alternate; loop: true; easing: easeInOutSine"></a-text>
       </a-entity>
     </a-entity>
   </a-scene>

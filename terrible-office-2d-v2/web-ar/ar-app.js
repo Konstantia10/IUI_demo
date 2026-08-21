@@ -11,7 +11,7 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
     'Office cleanup complete! Walk around the poster to inspect it.'
   ];
   const confirmations=['First paper binned','Both papers binned','Coffee spill cleaned','Mug placed upright','Documents shelved'];
-  let step=0,selected=false,tracking=false,dragSource=null,dragMoved=false,suppressClick=false;
+  let step=0,selected=false,tracking=false,dragSource=null,dragStep=null,dragMoved=false,suppressClick=false;
 
   const sourceEls=taskSources.map(id=>document.getElementById(id));
   const bin=document.getElementById('binTarget');
@@ -24,32 +24,96 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
   const undo=document.getElementById('undoAr');
   const camera=document.querySelector('a-camera');
   const dragSurface=document.getElementById('dragSurface');
+  const successBurst=document.getElementById('successBurst');
+  const cleanOfficeReveal=document.getElementById('cleanOfficeReveal');
+  const progressiveEls=[...root.querySelectorAll('[data-visible-until]')];
   const originalPositions=sourceEls.map(el=>el.object3D.position.clone());
+  let audioContext=null;
+  this.enableAudio=()=>{
+    const AudioContext=window.AudioContext||window.webkitAudioContext;
+    if(AudioContext&&!audioContext)audioContext=new AudioContext();
+    audioContext?.resume();
+  };
 
   const setVisible=(el,value)=>el?.setAttribute('visible',value);
+  const setEnvironmentState=()=>{
+    progressiveEls.forEach(el=>setVisible(el,step<Number(el.dataset.visibleUntil)));
+    setVisible(cleanOfficeReveal,step===5);
+    const frameColor=step===5?'#8bffb0':'#65d6ff';
+    document.querySelectorAll('#frame a-plane').forEach(el=>{
+      if(el.components?.material)el.setAttribute('material','color',frameColor);
+    });
+    document.getElementById('spatialHint').textContent=step===5
+      ? 'Walk left and right to inspect the restored office in depth.'
+      : 'Move left and right—the AR objects occupy real depth.';
+  };
   const render=()=>{
     sourceEls.forEach((el,index)=>{setVisible(el,index===step&&step<5);el.object3D.position.copy(originalPositions[index]);});
     Object.values(targetEls).forEach(el=>setVisible(el,false));
     if(step<5&&destinations[step])setVisible(targetEls[destinations[step]],true);
     selected=false;
     dragSource=null;
+    dragStep=null;
+    if(root.sceneEl.hasLoaded)setEnvironmentState();
+    root.object3D.updateMatrixWorld(true);
     instruction.textContent=tracking?instructions[step]:'Find the office poster to continue';
     progressBar.style.width=`${step*20}%`;
     progressCount.textContent=`${step} / 5`;
     undo.disabled=step===0;
   };
   const toast=message=>{const el=document.getElementById('toast');el.textContent=message;el.hidden=false;clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>el.hidden=true,1500);};
-  const burst=()=>{const el=document.getElementById('successBurst');el.removeAttribute('animation__fade');setVisible(el,true);el.setAttribute('animation__fade','property: components.material.material.opacity; from: 1; to: 0; dur: 700');setTimeout(()=>setVisible(el,false),720);};
-  const complete=()=>{if(step>=5)return;toast(confirmations[step]);burst();step++;render();};
+  const playSuccessSound=sourceIndex=>{
+    if(!audioContext)return;
+    const now=audioContext.currentTime;
+    [0,1].forEach(note=>{
+      const oscillator=audioContext.createOscillator();
+      const gain=audioContext.createGain();
+      const pan=audioContext.createStereoPanner?.();
+      oscillator.type='sine';
+      oscillator.frequency.setValueAtTime(note?659.25:523.25,now+note*.09);
+      gain.gain.setValueAtTime(.0001,now+note*.09);
+      gain.gain.exponentialRampToValueAtTime(.12,now+note*.09+.018);
+      gain.gain.exponentialRampToValueAtTime(.0001,now+note*.09+.24);
+      if(pan){pan.pan.value=Math.max(-1,Math.min(1,originalPositions[sourceIndex].x*2));oscillator.connect(gain).connect(pan).connect(audioContext.destination);}
+      else oscillator.connect(gain).connect(audioContext.destination);
+      oscillator.start(now+note*.09);
+      oscillator.stop(now+note*.09+.25);
+    });
+    navigator.vibrate?.([24,35,42]);
+  };
+  const burst=position=>{
+    successBurst.object3D.position.set(position.x,position.y,.09);
+    const ring=successBurst.querySelector('a-ring');
+    ring.removeAttribute('animation__expand');
+    ring.removeAttribute('animation__fade');
+    setVisible(successBurst,true);
+    requestAnimationFrame(()=>{
+      ring.setAttribute('animation__expand','property: scale; from: .2 .2 .2; to: 2.4 2.4 2.4; dur: 650; easing: easeOutCubic');
+      ring.setAttribute('animation__fade','property: components.material.material.opacity; from: 1; to: 0; dur: 700');
+    });
+    setTimeout(()=>setVisible(successBurst,false),720);
+  };
+  const complete=()=>{
+    if(step>=5)return;
+    const completedStep=step;
+    const destinationName=destinations[completedStep];
+    const feedbackPosition=destinationName?targetEls[destinationName].object3D.position:sourceEls[completedStep].object3D.position;
+    toast(confirmations[completedStep]);
+    burst(feedbackPosition);
+    playSuccessSound(completedStep);
+    step++;
+    render();
+  };
 
   const finishDrag=()=>{
     if(!dragSource)return;
-    const destinationName=destinations[step];
+    const sourceIndex=dragStep;
+    const destinationName=destinations[sourceIndex];
     const destination=destinationName&&targetEls[destinationName];
-    const sourceIndex=step;
     const closeEnough=destination&&dragSource.object3D.position.distanceTo(destination.object3D.position)<.13;
     suppressClick=dragMoved;
     dragSource=null;
+    dragStep=null;
     if(closeEnough)complete();else{
       sourceEls[sourceIndex].object3D.position.copy(originalPositions[sourceIndex]);
       if(dragMoved)toast(`Drop it inside the glowing ${destinationName}.`);
@@ -60,6 +124,7 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
   sourceEls.forEach((el,index)=>el.addEventListener('mousedown',()=>{
     if(index!==step||destinations[step]===null)return;
     dragSource=el;
+    dragStep=index;
     dragMoved=false;
     selected=true;
     targetEls[destinations[step]].setAttribute('material','opacity',.95);
@@ -88,6 +153,8 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
       if(step>=5||destinations[step]===null)return false;
       const rect=canvas.getBoundingClientRect();
       const world=new THREE.Vector3();
+      root.object3D.updateMatrixWorld(true);
+      cameraObject.updateMatrixWorld(true);
       sourceEls[step].object3D.getWorldPosition(world);
       world.project(cameraObject);
       const x=rect.left+(world.x+1)*rect.width/2;
@@ -100,6 +167,7 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
       event.stopPropagation();
       canvas.setPointerCapture(event.pointerId);
       dragSource=sourceEls[step];
+      dragStep=step;
       dragMoved=false;
       selected=true;
       canvas.classList.add('drag-active');
@@ -110,7 +178,7 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
       event.preventDefault();
       const local=pointerToPoster(event);
       if(!local)return;
-      const origin=originalPositions[step];
+      const origin=originalPositions[dragStep];
       dragMoved=dragMoved||Math.hypot(local.x-origin.x,local.y-origin.y)>.012;
       dragSource.object3D.position.set(local.x,local.y,.035);
     },true);
@@ -147,7 +215,7 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
     const hit=camera.components.raycaster.intersections.find(intersection=>intersection.object?.el===dragSurface);
     if(!hit)return;
     const local=root.object3D.worldToLocal(hit.point.clone());
-    const origin=originalPositions[step];
+    const origin=originalPositions[dragStep];
     dragMoved=dragMoved||Math.hypot(local.x-origin.x,local.y-origin.y)>.012;
     dragSource.object3D.position.set(local.x,local.y,.035);
   };
@@ -199,6 +267,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   document.getElementById('startAr').onclick=()=>{
     if(isFilePage)return;
+    target.components['office-ar-controller']?.enableAudio?.();
     startStatus.textContent='Starting camera and loading image recognition…';
     const start=()=>{
       try{
