@@ -41,7 +41,7 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
   const root=this.el;
   const sourceEls=[document.getElementById('paperOne'),document.getElementById('paperTwo')];
   const instructions=['Drag the paper ball into the photographed bin','Now drag the second paper ball into the bin','Desk cleared—the photograph remains the environment'];
-  const confirmations=['Paper tossed into the bin','Both paper balls cleared'];
+  const confirmations=['Paper removed from the poster','Both papers removed from the poster'];
   const instruction=document.getElementById('instruction');
   const progressBar=document.getElementById('progressBar');
   const progressCount=document.getElementById('progressCount');
@@ -84,11 +84,17 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
       setVisible(el,active);
       el.classList.toggle('clickable',active);
       setVisible(restorationPatches[index],step>index);
+      if(step>index){
+        restorationPatches[index].removeAttribute('animation__reveal');
+        restorationPatches[index].setAttribute('animation__reveal','property: scale; from: .82 .82 .82; to: 1 1 1; dur: 360; easing: easeOutBack');
+      }else{
+        restorationPatches[index].setAttribute('scale','1 1 1');
+      }
     });
     setVisible(bin,step<2);
     busy=false;
     instruction.textContent=tracking?instructions[step]:'Find the office poster to continue';
-    spatialHint.textContent=step===2?'The AR enhanced objects that already existed in the image.':'Press the highlighted paper, move your finger to the real bin, then release.';
+    spatialHint.textContent=step===2?'Both photographed papers are digitally concealed.':step===1?'The first paper is digitally concealed; drag the second one.':'Press the highlighted paper, move your finger to the real bin, then release.';
     progressBar.style.width=`${step*50}%`;
     progressCount.textContent=`${step} / 2`;
     undo.disabled=step===0;

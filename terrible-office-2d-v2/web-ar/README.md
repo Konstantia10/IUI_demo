@@ -31,6 +31,7 @@ For phone testing, deploy this folder to an HTTPS static host. Opening it throug
 - The photographed wastebasket subtly breathes in place and reacts while a paper ball is being dragged toward it; no abstract target ring is used.
 - Successful drops follow a gravity-shaped arc with a visible face-on tumble, then compress the bin slightly on impact.
 - After impact, a small feathered crop from a cleaned version of the poster covers the original photographed paper ball, creating a localized disappearance illusion without replacing the full camera image.
+- Versioned script and texture URLs prevent mobile Safari from combining a new scene with stale restoration code.
 - Direct pointer-to-target-plane dragging remains registered while the camera moves.
 - The experience uses no platform, room, labels, or furniture overlay.
 - Tones and vibration reinforce successful placement on supported devices.
