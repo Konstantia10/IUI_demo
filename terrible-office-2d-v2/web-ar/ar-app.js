@@ -162,6 +162,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const welcome=document.getElementById('welcome');
   const startStatus=document.getElementById('startStatus');
   let readyTimer;
+  let resizeTimer;
   const isFilePage=location.protocol==='file:';
   if(isFilePage){
     const warning=document.getElementById('launchWarning');
@@ -184,6 +185,24 @@ document.addEventListener('DOMContentLoaded',()=>{
       video.style.setProperty('z-index','0','important');
     });
   };
+  const refreshOrientation=()=>{
+    const landscape=window.innerWidth>window.innerHeight;
+    document.body.classList.toggle('is-landscape',landscape);
+    document.body.classList.toggle('is-portrait',!landscape);
+    clearTimeout(resizeTimer);
+    resizeTimer=setTimeout(()=>{
+      scene.resize?.();
+      if(scene.renderer&&scene.canvas){
+        const ratio=Math.min(window.devicePixelRatio||1,2);
+        scene.renderer.setPixelRatio(ratio);
+        scene.renderer.setSize(window.innerWidth,window.innerHeight,false);
+      }
+      makeCameraVisible();
+    },250);
+  };
+  refreshOrientation();
+  window.addEventListener('resize',refreshOrientation,{passive:true});
+  window.addEventListener('orientationchange',refreshOrientation,{passive:true});
   if(scene.hasLoaded)makeCameraVisible();else scene.addEventListener('renderstart',makeCameraVisible,{once:true});
   document.getElementById('showTarget').onclick=()=>document.getElementById('targetPreview').hidden=false;
   document.getElementById('openTargetDuringScan').onclick=()=>document.getElementById('targetPreview').hidden=false;
@@ -191,6 +210,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   scene.addEventListener('arReady',()=>{
     clearTimeout(readyTimer);
     makeCameraVisible();
+    document.body.classList.add('ar-started');
     welcome.hidden=true;
     document.getElementById('trackingBadge').textContent='Camera ready — find the poster';
   });
@@ -201,9 +221,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   document.getElementById('startAr').onclick=()=>{
     if(isFilePage)return;
-    // Orientation locking is supported by some Android browsers. iOS Safari
-    // ignores it, so the CSS rotation guide remains the cross-platform fallback.
-    screen.orientation?.lock?.('landscape').catch(()=>{});
     target.components['office-ar-controller']?.enableAudio?.();
     startStatus.textContent='Starting camera and loading image recognition…';
     const start=()=>{
