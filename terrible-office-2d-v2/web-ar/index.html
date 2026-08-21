@@ -16,12 +16,11 @@
     <div class="welcome-card">
       <p class="eyebrow">Image-tracked WebAR</p>
       <h1>Clean the terrible office—in its real place</h1>
-      <p id="startStatus">Point your camera at the office poster. A miniature office built from real 3D models will appear beyond its top edge.</p>
+      <p id="startStatus">Point your camera at the office poster. Paper balls already visible in the photograph will lift from the desk and come alive.</p>
       <ol>
         <li>Allow camera access.</li>
-        <li>Fit the whole poster inside the view.</li>
-        <li>Look just above the poster for the miniature office.</li>
-        <li>Move sideways to reveal its depth, then assemble the glowing models.</li>
+        <li>Fit the complete poster inside the guide.</li>
+        <li>Tap each hovering paper ball to toss it into the real bin.</li>
       </ol>
       <button id="startAr" class="primary">Start AR cleanup</button>
       <button id="showTarget" class="secondary">Show target image</button>
@@ -46,9 +45,9 @@
   </header>
 
   <aside class="mission-panel">
-    <p class="eyebrow">Spatial mission <span id="progressCount">0 / 5</span></p>
+    <p class="eyebrow">Image becomes spatial <span id="progressCount">0 / 2</span></p>
     <h2 id="instruction">Scan the office poster to begin</h2>
-    <p id="spatialHint" class="spatial-hint">Look above the poster, then move left and right to reveal hidden depth.</p>
+    <p id="spatialHint" class="spatial-hint">The digital paper is aligned with a paper ball in the photograph.</p>
     <div class="progress"><span id="progressBar"></span></div>
     <button id="undoAr" disabled>Undo</button>
     <button id="resetAr">Reset</button>
@@ -75,75 +74,30 @@
     loading-screen="enabled: false">
 
     <a-assets>
-      <a-mixin id="sourceHalo" geometry="primitive: ring; radiusInner: .052; radiusOuter: .061" material="color: #65d6ff; transparent: true; opacity: .9; shader: flat" animation__pulse="property: scale; from: .88 .88 .88; to: 1.15 1.15 1.15; dur: 800; dir: alternate; loop: true; easing: easeInOutSine"></a-mixin>
-      <a-mixin id="targetHalo" geometry="primitive: ring; radiusInner: .064; radiusOuter: .072" material="color: #8bffb0; transparent: true; opacity: .88; shader: flat" animation__pulse="property: scale; from: .92 .92 .92; to: 1.1 1.1 1.1; dur: 950; dir: alternate; loop: true; easing: easeInOutSine"></a-mixin>
-      <a-asset-item id="deskModel" src="assets/models/desk.glb"></a-asset-item>
-      <a-asset-item id="chairModel" src="assets/models/chairDesk.glb"></a-asset-item>
-      <a-asset-item id="screenModel" src="assets/models/computerScreen.glb"></a-asset-item>
-      <a-asset-item id="lampModel" src="assets/models/lampRoundTable.glb"></a-asset-item>
-      <a-asset-item id="booksModel" src="assets/models/books.glb"></a-asset-item>
-      <a-asset-item id="bookcaseModel" src="assets/models/bookcaseOpenLow.glb"></a-asset-item>
-      <a-asset-item id="boxModel" src="assets/models/cardboardBoxOpen.glb"></a-asset-item>
-      <a-asset-item id="plantModel" src="assets/models/pottedPlant.glb"></a-asset-item>
+      <a-asset-item id="crumpledPaperModel" src="assets/models/crumpled-paper.gltf"></a-asset-item>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false" cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .clickable"></a-camera>
 
     <a-entity id="officeTarget" mindar-image-target="targetIndex: 0">
-      <a-light type="ambient" color="#f3eadb" intensity="1.25"></a-light>
-      <a-light type="directional" color="#fff4dd" intensity="1.35" position="-.6 1 .8"></a-light>
+      <a-light type="ambient" color="#ffffff" intensity="1.05"></a-light>
+      <a-light type="directional" color="#fff9ed" intensity="1.3" position="-.5 .6 .8"></a-light>
 
-      <!-- CC0 Kenney models form a coherent miniature office above the target. -->
-      <a-entity id="officePortal">
-        <a-entity gltf-model="#deskModel" position="-.2 .385 .035" scale=".55 .55 .55" shadow="cast: true; receive: true"></a-entity>
-        <a-entity gltf-model="#bookcaseModel" position=".12 .385 .015" scale=".35 .35 .35" shadow="cast: true; receive: true"></a-entity>
-        <a-entity gltf-model="#lampModel" position=".015 .575 .025" scale=".35 .35 .35" rotation="0 -22 0" shadow="cast: true"></a-entity>
+      <!-- Models align with paper balls that already exist in the target photograph. -->
+      <a-entity id="paperOne" class="clickable ar-source" position=".18 -.195 .035" scale=".09 .09 .09" data-step="0"
+        animation__hover="property: position; from: .18 -.195 .035; to: .18 -.18 .05; dur: 1150; dir: alternate; loop: true; easing: easeInOutSine"
+        animation__turn="property: rotation; from: -8 0 -6; to: 8 22 7; dur: 2300; dir: alternate; loop: true; easing: easeInOutSine">
+        <a-entity gltf-model="#crumpledPaperModel" shadow="cast: true"></a-entity>
       </a-entity>
-
-      <a-entity id="chair" class="clickable ar-source" position="-.32 .385 .09" scale=".32 .32 .32" data-step="0">
-        <a-ring mixin="sourceHalo" rotation="-90 0 0" position=".07 .01 -.07" scale="3 3 3"></a-ring>
-        <a-entity gltf-model="#chairModel" shadow="cast: true; receive: true"></a-entity>
+      <a-entity id="paperTwo" class="ar-source" position=".325 -.275 .035" scale=".085 .085 .085" data-step="1" visible="false"
+        animation__hover="property: position; from: .325 -.275 .035; to: .325 -.26 .05; dur: 1250; dir: alternate; loop: true; easing: easeInOutSine"
+        animation__turn="property: rotation; from: 5 -12 4; to: -9 18 -8; dur: 2500; dir: alternate; loop: true; easing: easeInOutSine">
+        <a-entity gltf-model="#crumpledPaperModel" shadow="cast: true"></a-entity>
       </a-entity>
-      <a-entity id="chairTarget" class="clickable ar-target" position=".015 .39 -.025" data-destination="chairSpot">
-        <a-ring mixin="targetHalo" rotation="-90 0 0"></a-ring>
+      <a-entity id="binTarget" position=".415 -.255 .02">
+        <a-ring radius-inner=".065" radius-outer=".071" material="color: #8bffb0; transparent: true; opacity: .76; shader: flat"
+          animation="property: scale; from: .9 .9 .9; to: 1.08 1.08 1.08; dur: 900; dir: alternate; loop: true; easing: easeInOutSine"></a-ring>
       </a-entity>
-
-      <a-entity id="screen" class="clickable ar-source" position=".25 .385 .085" scale=".38 .38 .38" data-step="1" visible="false">
-        <a-ring mixin="sourceHalo" rotation="-90 0 0" position=".12 .005 -.05" scale="2.4 2.4 2.4"></a-ring>
-        <a-entity gltf-model="#screenModel" shadow="cast: true"></a-entity>
-      </a-entity>
-      <a-entity id="screenTarget" class="clickable ar-target" position="-.08 .59 .025" data-destination="screenSpot" visible="false">
-        <a-ring mixin="targetHalo" rotation="-90 0 0"></a-ring>
-      </a-entity>
-
-      <a-entity id="books" class="clickable ar-source" position="-.17 .39 .12" scale=".65 .65 .65" data-step="2" visible="false">
-        <a-ring mixin="sourceHalo" rotation="-90 0 0" position=".07 .005 -.04" scale="1.7 1.7 1.7"></a-ring>
-        <a-entity gltf-model="#booksModel" shadow="cast: true"></a-entity>
-      </a-entity>
-      <a-entity id="booksTarget" class="clickable ar-target" position=".18 .47 .02" data-destination="booksSpot" visible="false">
-        <a-ring mixin="targetHalo" rotation="-90 0 0"></a-ring>
-      </a-entity>
-
-      <a-entity id="storageBox" class="clickable ar-source" position=".27 .385 .105" scale=".38 .38 .38" data-step="3" visible="false">
-        <a-ring mixin="sourceHalo" rotation="-90 0 0" position=".1 .005 -.1" scale="2 2 2"></a-ring>
-        <a-entity gltf-model="#boxModel" shadow="cast: true"></a-entity>
-      </a-entity>
-      <a-entity id="boxTarget" class="clickable ar-target" position="-.27 .39 .09" data-destination="boxSpot" visible="false">
-        <a-ring mixin="targetHalo" rotation="-90 0 0"></a-ring>
-      </a-entity>
-
-      <a-entity id="plant" class="clickable ar-source" position=".29 .385 .12" scale=".42 .42 .42" data-step="4" visible="false">
-        <a-ring mixin="sourceHalo" rotation="-90 0 0" position=".08 .005 -.1" scale="2 2 2"></a-ring>
-        <a-entity gltf-model="#plantModel" shadow="cast: true"></a-entity>
-      </a-entity>
-      <a-entity id="plantTarget" class="clickable ar-target" position=".05 .59 .08" data-destination="plantSpot" visible="false">
-        <a-ring mixin="targetHalo" rotation="-90 0 0"></a-ring>
-      </a-entity>
-
-      <a-entity id="successBurst" visible="false" position="0 .39 .08">
-        <a-ring radius-inner=".07" radius-outer=".078" rotation="-90 0 0" material="color: #8bffb0; transparent: true; opacity: 1; shader: flat"></a-ring>
-      </a-entity>
-      <a-entity id="cleanOfficeReveal" visible="false"></a-entity>
     </a-entity>
   </a-scene>
 

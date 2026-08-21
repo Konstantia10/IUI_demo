@@ -1,6 +1,6 @@
 # Terrible Office — WebAR edition
 
-This is a separate AR version of the 2D project. It uses A-Frame 1.5.0, MindAR 1.2.5 image tracking, and selected models from Kenney's Furniture Kit.
+This is a separate AR version of the 2D project. It uses A-Frame 1.5.0 and MindAR 1.2.5 image tracking.
 
 ## Run
 
@@ -22,10 +22,10 @@ For phone testing, deploy this folder to an HTTPS static host. Opening it throug
 - The user searches and moves physically, practicing spatial attention rather than selecting from an abstract menu.
 - Target-found/lost feedback teaches correct scanning distance and framing.
 - Animated spatial confirmation shows where an item came from and where it belongs.
-- A coherent modeled office projects beyond the poster's top edge instead of obscuring its image.
-- The desk, chair, monitor, lamp, bookcase, books, box, and plant are embedded-material GLB models.
-- Completed task objects remain in place, so the office visibly assembles over five steps.
-- Only the current model and destination glow, keeping the tracked poster readable.
+- AR models align with objects that already exist in the photograph instead of creating a separate scene.
+- Crumpled paper balls lift subtly from their photographed counterparts and retain the image as context.
+- Tapping a paper ball animates it along the desk into the photographed waste bin.
+- The experience uses no platform, room, labels, or furniture overlay.
 - Tones and vibration reinforce successful placement on supported devices.
 - The final task reveals a restored office without adding persistent clutter to the poster.
 - The image remains usable as a normal poster while the phone adds an optional interactive layer.
@@ -34,7 +34,8 @@ For phone testing, deploy this folder to an HTTPS static host. Opening it throug
 
 - `assets/office-target.mind`: compiled MindAR features for the office poster.
 - `assets/office-poster.jpg`: printable/displayable recognition target.
-- `assets/models/`: selected CC0 GLB files and license from Kenney's Furniture Kit.
+- `assets/models/crumpled-paper.gltf`: generated faceted paper mesh with embedded PBR material.
+- `tools/generate-crumpled-paper.mjs`: deterministic source for regenerating the paper model.
 - `index.html`: A-Frame/MindAR scene and HUD.
 - `ar-app.js`: target tracking and cleanup state machine.
 - `styles.css`: mobile AR interface.

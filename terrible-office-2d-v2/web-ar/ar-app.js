@@ -1,42 +1,19 @@
 AFRAME.registerComponent('office-ar-controller',{init:function(){
   const root=this.el;
-  const taskSources=['chair','screen','books','storageBox','plant'];
-  const destinations=['chairSpot','screenSpot','booksSpot','boxSpot','plantSpot'];
-  const instructions=[
-    'Select the office chair, then its place under the desk',
-    'Place the monitor on the desktop',
-    'Move the books onto the bookcase',
-    'Store the open box beside the desk',
-    'Finish the office by placing the plant on the desk',
-    'Office assembled—move left and right to inspect the models'
-  ];
-  const confirmations=['Chair positioned','Monitor installed','Books shelved','Box stored','Plant placed'];
-  const sourceEls=taskSources.map(id=>document.getElementById(id));
-  const targetEls={
-    chairSpot:document.getElementById('chairTarget'),
-    screenSpot:document.getElementById('screenTarget'),
-    booksSpot:document.getElementById('booksTarget'),
-    boxSpot:document.getElementById('boxTarget'),
-    plantSpot:document.getElementById('plantTarget')
-  };
-  const destinationLabels={chairSpot:'chair position',screenSpot:'desktop',booksSpot:'bookcase',boxSpot:'storage position',plantSpot:'plant position'};
+  const sourceEls=[document.getElementById('paperOne'),document.getElementById('paperTwo')];
+  const instructions=['Tap the hovering paper ball on the desk','Now tap the paper ball beside the bin','Desk cleared—the photograph remains the environment'];
+  const confirmations=['Paper tossed into the bin','Both paper balls cleared'];
   const instruction=document.getElementById('instruction');
   const progressBar=document.getElementById('progressBar');
   const progressCount=document.getElementById('progressCount');
   const spatialHint=document.getElementById('spatialHint');
   const undo=document.getElementById('undoAr');
-  const successBurst=document.getElementById('successBurst');
-  const cleanOfficeReveal=document.getElementById('cleanOfficeReveal');
-  const originalPositions=sourceEls.map(el=>el.object3D.position.clone());
-  const originalRotations=sourceEls.map(el=>el.object3D.rotation.clone());
-  const placedPositions=[
-    new THREE.Vector3(.015,.385,-.025),
-    new THREE.Vector3(-.08,.575,.025),
-    new THREE.Vector3(.145,.435,.015),
-    new THREE.Vector3(-.29,.385,.075),
-    new THREE.Vector3(.045,.575,.075)
+  const bin=document.getElementById('binTarget');
+  const states=[
+    {position:'.18 -.195 .035',scale:'.09 .09 .09',hover:'property: position; from: .18 -.195 .035; to: .18 -.18 .05; dur: 1150; dir: alternate; loop: true; easing: easeInOutSine',turn:'property: rotation; from: -8 0 -6; to: 8 22 7; dur: 2300; dir: alternate; loop: true; easing: easeInOutSine'},
+    {position:'.325 -.275 .035',scale:'.085 .085 .085',hover:'property: position; from: .325 -.275 .035; to: .325 -.26 .05; dur: 1250; dir: alternate; loop: true; easing: easeInOutSine',turn:'property: rotation; from: 5 -12 4; to: -9 18 -8; dur: 2500; dir: alternate; loop: true; easing: easeInOutSine'}
   ];
-  let step=0,selected=false,tracking=false,audioContext=null;
+  let step=0,tracking=false,busy=false,audioContext=null;
 
   this.enableAudio=()=>{
     const AudioContext=window.AudioContext||window.webkitAudioContext;
@@ -52,34 +29,28 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
     clearTimeout(this.toastTimer);
     this.toastTimer=setTimeout(()=>el.hidden=true,1500);
   };
-  const resetHalos=()=>{
-    root.querySelectorAll('.ar-source a-ring').forEach(el=>el.setAttribute('material','color','#65d6ff'));
-    Object.values(targetEls).forEach(el=>el.querySelector('a-ring')?.setAttribute('material','color','#8bffb0'));
-  };
   const render=()=>{
     sourceEls.forEach((el,index)=>{
-      const completed=index<step;
-      const active=index===step&&step<5;
-      setVisible(el,completed||active);
-      el.object3D.position.copy(completed?placedPositions[index]:originalPositions[index]);
-      el.object3D.rotation.copy(originalRotations[index]);
+      const active=index===step&&step<2;
+      el.removeAttribute('animation__fly');
+      el.removeAttribute('animation__shrink');
+      el.removeAttribute('animation__spin');
+      el.setAttribute('position',states[index].position);
+      el.setAttribute('scale',states[index].scale);
+      el.setAttribute('animation__hover',states[index].hover);
+      el.setAttribute('animation__turn',states[index].turn);
+      setVisible(el,active);
       el.classList.toggle('clickable',active);
-      setVisible(el.querySelector('a-ring'),active);
     });
-    Object.values(targetEls).forEach(el=>setVisible(el,false));
-    if(step<5&&destinations[step])setVisible(targetEls[destinations[step]],true);
-    setVisible(cleanOfficeReveal,step===5);
-    selected=false;
-    resetHalos();
+    setVisible(bin,step<2);
+    busy=false;
     instruction.textContent=tracking?instructions[step]:'Find the office poster to continue';
-    spatialHint.textContent=step===5
-      ? 'Change viewpoint to inspect the completed 3D office.'
-      : 'Move sideways to compare the foreground and background models.';
-    progressBar.style.width=`${step*20}%`;
-    progressCount.textContent=`${step} / 5`;
+    spatialHint.textContent=step===2?'The AR enhanced objects that already existed in the image.':'The digital paper is aligned with a paper ball in the photograph.';
+    progressBar.style.width=`${step*50}%`;
+    progressCount.textContent=`${step} / 2`;
     undo.disabled=step===0;
   };
-  const playSuccessSound=sourceIndex=>{
+  const playSuccessSound=()=>{
     if(!audioContext)return;
     const now=audioContext.currentTime;
     [523.25,659.25].forEach((frequency,note)=>{
@@ -95,46 +66,23 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
     });
     navigator.vibrate?.(35);
   };
-  const burst=position=>{
-    successBurst.object3D.position.copy(position);
-    const ring=successBurst.querySelector('a-ring');
-    ring.removeAttribute('animation__expand');
-    ring.removeAttribute('animation__fade');
-    setVisible(successBurst,true);
-    requestAnimationFrame(()=>{
-      ring.setAttribute('animation__expand','property: scale; from: .2 .2 .2; to: 2 2 2; dur: 600; easing: easeOutCubic');
-      ring.setAttribute('animation__fade','property: components.material.material.opacity; from: 1; to: 0; dur: 650');
-    });
-    setTimeout(()=>setVisible(successBurst,false),680);
-  };
-  const complete=()=>{
-    if(step>=5)return;
-    const completedStep=step;
-    const destinationName=destinations[completedStep];
-    const feedbackEl=destinationName?targetEls[destinationName]:sourceEls[completedStep];
-    toast(confirmations[completedStep]);
-    burst(feedbackEl.object3D.position);
-    playSuccessSound(completedStep);
-    step++;
-    render();
-  };
-
   sourceEls.forEach((el,index)=>el.addEventListener('click',()=>{
-    if(index!==step)return;
-    if(destinations[step]===null){complete();return;}
-    selected=true;
-    el.querySelector('a-ring')?.setAttribute('material','color','#ffffff');
-    targetEls[destinations[step]].querySelector('a-ring')?.setAttribute('material','color','#ffffff');
-    instruction.textContent=`Now tap the glowing ${destinationLabels[destinations[step]]}`;
-    toast(`Selected—find the ${destinationLabels[destinations[step]]}.`);
-  }));
-  Object.entries(targetEls).forEach(([name,el])=>el.addEventListener('click',()=>{
-    if(selected&&destinations[step]===name)complete();
-    else toast('Tap the glowing object first.');
+    if(index!==step||busy)return;
+    busy=true;
+    el.classList.remove('clickable');
+    el.removeAttribute('animation__hover');
+    el.removeAttribute('animation__turn');
+    const start=el.object3D.position;
+    el.setAttribute('animation__fly',`property: position; from: ${start.x} ${start.y} ${start.z}; to: .415 -.255 .075; dur: 720; easing: easeInQuad`);
+    el.setAttribute('animation__shrink','property: scale; to: .015 .015 .015; dur: 720; easing: easeInQuad');
+    el.setAttribute('animation__spin','property: rotation; to: 210 360 160; dur: 720; easing: easeInQuad');
+    playSuccessSound();
+    toast(confirmations[index]);
+    setTimeout(()=>{step++;render();},760);
   }));
   root.addEventListener('targetFound',()=>{
     tracking=true;
-    document.getElementById('trackingBadge').textContent='Portal anchored';
+    document.getElementById('trackingBadge').textContent='Objects aligned';
     document.getElementById('trackingBadge').className='tracking found';
     render();
   });
@@ -144,7 +92,7 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
     document.getElementById('trackingBadge').className='tracking searching';
     instruction.textContent='Reacquiring the office poster…';
   });
-  undo.addEventListener('click',()=>{if(step>0){step--;render();toast('Last action undone');}});
+  undo.addEventListener('click',()=>{if(step>0&&!busy){step--;render();toast('Last action undone');}});
   document.getElementById('resetAr').addEventListener('click',()=>{step=0;render();toast('Cleanup reset');});
   render();
 }});
