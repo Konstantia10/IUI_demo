@@ -1,3 +1,42 @@
+AFRAME.registerComponent('restoration-patch',{
+  schema:{
+    src:{type:'selector'},
+    uMin:{type:'number'},uMax:{type:'number'},
+    vMin:{type:'number'},vMax:{type:'number'}
+  },
+  init:function(){
+    const data=this.data;
+    const texture=new THREE.TextureLoader().load(data.src.getAttribute('src'));
+    texture.colorSpace=THREE.SRGBColorSpace;
+    this.el.getObject3D('mesh').material=new THREE.ShaderMaterial({
+      uniforms:{map:{value:texture},crop:{value:new THREE.Vector4(data.uMin,data.vMin,data.uMax,data.vMax)}},
+      vertexShader:'varying vec2 vUv; void main(){vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+      fragmentShader:'uniform sampler2D map; uniform vec4 crop; varying vec2 vUv; void main(){vec2 sampleUv=mix(crop.xy,crop.zw,vUv); vec4 color=texture2D(map,sampleUv); float gray=dot(color.rgb,vec3(.299,.587,.114)); color.rgb=vec3(gray); float edge=min(min(vUv.x,1.0-vUv.x),min(vUv.y,1.0-vUv.y)); color.a*=smoothstep(0.0,.18,edge); gl_FragColor=color;}',
+      transparent:true,
+      depthTest:false,
+      depthWrite:false
+    });
+  }
+});
+
+AFRAME.registerComponent('grayscale-sprite',{
+  schema:{src:{type:'selector'}},
+  init:function(){
+    const texture=new THREE.TextureLoader().load(this.data.src.getAttribute('src'));
+    texture.colorSpace=THREE.SRGBColorSpace;
+    this.el.getObject3D('mesh').material=new THREE.ShaderMaterial({
+      uniforms:{map:{value:texture}},
+      vertexShader:'varying vec2 vUv; void main(){vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+      fragmentShader:'uniform sampler2D map; varying vec2 vUv; void main(){vec4 color=texture2D(map,vUv); float gray=dot(color.rgb,vec3(.299,.587,.114)); gl_FragColor=vec4(vec3(gray),color.a);}',
+      transparent:true,
+      alphaTest:.025,
+      depthTest:false,
+      depthWrite:false,
+      side:THREE.DoubleSide
+    });
+  }
+});
+
 AFRAME.registerComponent('office-ar-controller',{init:function(){
   const root=this.el;
   const sourceEls=[document.getElementById('paperOne'),document.getElementById('paperTwo')];
@@ -9,6 +48,7 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
   const spatialHint=document.getElementById('spatialHint');
   const undo=document.getElementById('undoAr');
   const bin=document.getElementById('binTarget');
+  const restorationPatches=[document.getElementById('paperOnePatch'),document.getElementById('paperTwoPatch')];
   const states=[
     // Coordinates measured from the 1448 x 1086 target. MindAR's target plane is 1 x .75.
     {position:'.149 -.196 .003',scale:'.064 .064 .064',pulse:'property: scale; from: .061 .061 .061; to: .067 .067 .067; dur: 900; dir: alternate; loop: true; easing: easeInOutSine'},
@@ -43,6 +83,7 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
       el.removeAttribute('animation__turn');
       setVisible(el,active);
       el.classList.toggle('clickable',active);
+      setVisible(restorationPatches[index],step>index);
     });
     setVisible(bin,step<2);
     busy=false;

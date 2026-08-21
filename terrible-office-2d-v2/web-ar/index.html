@@ -21,7 +21,7 @@
     <div class="welcome-card">
       <p class="eyebrow">Image-tracked WebAR</p>
       <h1>Clean the terrible office—in its real place</h1>
-      <p id="startStatus">Point your camera at the office poster. Paper balls already visible in the photograph will subtly come alive in place.</p>
+      <p id="startStatus">Point your camera at the grayscale office poster. Paper balls already visible in the photograph will subtly come alive in place.</p>
       <ol>
         <li>Rotate your phone to landscape, then allow camera access.</li>
         <li>Fit the complete poster inside the guide.</li>
@@ -81,6 +81,7 @@
     <a-assets>
       <img id="paperBallPhoto" src="assets/paper-ball-photo.png" alt="">
       <img id="wastebasketPhoto" src="assets/wastebasket-photo.png" alt="">
+      <img id="cleanPoster" src="assets/office-poster-clean.png" alt="">
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false" cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .clickable"></a-camera>
@@ -92,16 +93,22 @@
       <!-- Anchors are measured from the actual paper-ball pixels in the target photograph. -->
       <a-entity id="paperOne" class="clickable ar-source" position=".149 -.196 .003" scale=".064 .064 .064" data-step="0"
         animation__pulse="property: scale; from: .061 .061 .061; to: .067 .067 .067; dur: 900; dir: alternate; loop: true; easing: easeInOutSine">
-        <a-image src="#paperBallPhoto" width="1" height="1" material="transparent: true; alphaTest: .03; shader: flat; side: double; depthTest: false; depthWrite: false"></a-image>
+        <a-image src="#paperBallPhoto" width="1" height="1" grayscale-sprite="src: #paperBallPhoto"></a-image>
       </a-entity>
       <a-entity id="paperTwo" class="ar-source" position=".191 -.288 .003" scale=".061 .061 .061" data-step="1" visible="false"
         animation__pulse="property: scale; from: .058 .058 .058; to: .064 .064 .064; dur: 980; dir: alternate; loop: true; easing: easeInOutSine">
-        <a-image src="#paperBallPhoto" width="1" height="1" material="transparent: true; alphaTest: .03; shader: flat; side: double; depthTest: false; depthWrite: false"></a-image>
+        <a-image src="#paperBallPhoto" width="1" height="1" grayscale-sprite="src: #paperBallPhoto"></a-image>
       </a-entity>
+
+      <!-- Small feathered crops from the cleaned poster hide only each cleared paper. -->
+      <a-plane id="paperOnePatch" position=".149 -.196 .002" width=".115" height=".09" visible="false"
+        restoration-patch="src: #cleanPoster; uMin: .588; uMax: .704; vMin: .181; vMax: .301"></a-plane>
+      <a-plane id="paperTwoPatch" position=".191 -.288 .002" width=".112" height=".095" visible="false"
+        restoration-patch="src: #cleanPoster; uMin: .636; uMax: .748; vMin: .052; vMax: .179"></a-plane>
+
       <a-entity id="binTarget" position=".376 -.278 .004"
         animation__breathe="property: scale; from: .985 .985 .985; to: 1.015 1.015 1.015; dur: 1250; dir: alternate; loop: true; easing: easeInOutSine">
-        <a-image src="#wastebasketPhoto" width=".2" height=".208"
-          material="transparent: true; alphaTest: .025; shader: flat; side: double; depthTest: false; depthWrite: false"></a-image>
+        <a-image src="#wastebasketPhoto" width=".2" height=".208" grayscale-sprite="src: #wastebasketPhoto"></a-image>
       </a-entity>
     </a-entity>
   </a-scene>
