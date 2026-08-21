@@ -72,13 +72,38 @@ AFRAME.registerComponent('office-ar-controller',{init:function(){
     busy=true;
     el.classList.remove('clickable');
     el.removeAttribute('animation__pulse');
-    const start=el.object3D.position;
-    el.setAttribute('animation__fly',`property: position; from: ${start.x} ${start.y} ${start.z}; to: .415 -.255 .075; dur: 720; easing: easeInQuad`);
-    el.setAttribute('animation__shrink','property: scale; to: .015 .015 .015; dur: 720; easing: easeInQuad');
-    el.setAttribute('animation__spin','property: rotation; to: 210 360 160; dur: 720; easing: easeInQuad');
     playSuccessSound();
     toast(confirmations[index]);
-    setTimeout(()=>{step++;render();},760);
+    bin.setAttribute('animation__catch','property: scale; from: 1 1 1; to: 1.055 .94 1; dur: 180; dir: alternate; loop: 2; easing: easeOutQuad');
+
+    // A short ballistic arc. Keeping rotation on the Z axis makes the flat,
+    // photographic sprite visibly tumble instead of turning edge-on.
+    const start=el.object3D.position.clone();
+    const startScale=el.object3D.scale.x;
+    const destination={x:.376,y:-.278,z:.012};
+    const duration=820;
+    const started=performance.now();
+    const animateThrow=now=>{
+      const t=Math.min((now-started)/duration,1);
+      const eased=t*t*(3-2*t);
+      const gravityArc=.115*4*t*(1-t);
+      const cameraArc=.055*Math.sin(Math.PI*t);
+      const x=start.x+(destination.x-start.x)*eased;
+      const y=start.y+(destination.y-start.y)*eased+gravityArc;
+      const z=start.z+(destination.z-start.z)*eased+cameraArc;
+      const scale=startScale+(0.028-startScale)*eased;
+      el.object3D.position.set(x,y,z);
+      el.object3D.rotation.set(0,0,THREE.MathUtils.degToRad(720*t));
+      el.object3D.scale.setScalar(scale);
+      if(t<1)requestAnimationFrame(animateThrow);
+      else{
+        bin.removeAttribute('animation__catch');
+        bin.setAttribute('scale','1 1 1');
+        step++;
+        render();
+      }
+    };
+    requestAnimationFrame(animateThrow);
   };
 
   // Convert a screen touch into the tracked image's local coordinate system. This

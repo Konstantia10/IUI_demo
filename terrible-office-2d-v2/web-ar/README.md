@@ -27,6 +27,7 @@ For phone testing, deploy this folder to an HTTPS static host. Opening it throug
 - Photo-real paper sprites align with objects that already exist in the photograph instead of creating a separate scene.
 - Crumpled paper balls rustle subtly in place and lift only while the user is dragging them.
 - The photographed wastebasket subtly breathes in place and reacts while a paper ball is being dragged toward it; no abstract target ring is used.
+- Successful drops follow a gravity-shaped arc with a visible face-on tumble, then compress the bin slightly on impact.
 - Direct pointer-to-target-plane dragging remains registered while the camera moves.
 - The experience uses no platform, room, labels, or furniture overlay.
 - Tones and vibration reinforce successful placement on supported devices.
