@@ -19,5 +19,9 @@ a-scene{z-index:1!important;background:transparent!important}
 .scan-frame span:nth-of-type(3){left:0;bottom:0;border-left:4px solid #65d6ff;border-bottom:4px solid #65d6ff}
 .scan-frame span:nth-of-type(4){right:0;bottom:0;border-right:4px solid #65d6ff;border-bottom:4px solid #65d6ff}
 .scanning-guide strong{font-size:18px}.scanning-guide p{max-width:420px;margin:7px auto;color:#d4e1eb;font-size:13px}.scanning-guide button{pointer-events:auto;padding:8px 12px;border:1px solid #65d6ff;border-radius:9px;background:#10273a;color:white}
-.mission-panel h2{margin-bottom:6px}
-.spatial-hint{margin:0 0 11px;color:#a9dff0;font-size:12px;line-height:1.35}
+.mission-panel{left:50%;right:auto;width:min(430px,calc(100% - 24px));padding:10px 12px;translate:-50% 0}
+.mission-panel h2{margin-bottom:4px;font-size:14px}
+.mission-panel .eyebrow{margin-bottom:4px}
+.mission-panel .progress{margin-bottom:7px}
+.mission-panel button{padding:5px 9px;font-size:12px}
+.spatial-hint{margin:0 0 7px;color:#a9dff0;font-size:11px;line-height:1.3}

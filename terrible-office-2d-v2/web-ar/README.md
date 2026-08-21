@@ -22,10 +22,11 @@ For phone testing, deploy this folder to an HTTPS static host. Opening it throug
 - The user searches and moves physically, practicing spatial attention rather than selecting from an abstract menu.
 - Target-found/lost feedback teaches correct scanning distance and framing.
 - Animated spatial confirmation shows where an item came from and where it belongs.
-- Props sit at different depths, so moving the phone produces real parallax rather than a flat overlay.
-- The monitor, lamp, fan, steam, and flies provide a continuously animated spatial environment.
-- Positional tones and vibration reinforce successful placement on supported devices.
-- The environment progressively changes and reveals a restored 3D office when the cleanup is complete.
+- A restrained miniature desk projects beyond the poster's top edge instead of obscuring its image.
+- Foreground, middle, and back objects are widely separated so viewpoint movement produces clear parallax.
+- Only the current task object and destination glow, keeping the tracked poster readable.
+- Tones and vibration reinforce successful placement on supported devices.
+- The final task reveals a restored office without adding persistent clutter to the poster.
 - The image remains usable as a normal poster while the phone adds an optional interactive layer.
 
 ## Files
